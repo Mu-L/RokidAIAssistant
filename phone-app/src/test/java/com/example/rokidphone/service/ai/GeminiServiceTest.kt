@@ -65,7 +65,8 @@ class GeminiServiceTest {
         service.transcribe(TestFixtures.createTestPcmAudio(), "en-US")
 
         val request = mockServer.server.takeRequest()
-        assertThat(request.path).contains("key=test-api-key")
+        assertThat(request.path).doesNotContain("key=")
+        assertThat(request.headers["x-goog-api-key"]).isEqualTo("test-api-key")
         val body = JSONObject(request.body.readUtf8())
         val parts = body.getJSONArray("contents")
             .getJSONObject(0)
@@ -730,7 +731,9 @@ class GeminiServiceTest {
         val service = createService(apiKey = "my-secret-key")
         mockServer.server.enqueue(jsonResponse(TestFixtures.MockResponses.geminiChatSuccess("ok")))
         service.chat("Test")
-        assertThat(mockServer.server.takeRequest().path).contains("key=my-secret-key")
+        val request = mockServer.server.takeRequest()
+        assertThat(request.path).doesNotContain("key=")
+        assertThat(request.headers["x-goog-api-key"]).isEqualTo("my-secret-key")
     }
 
     @Test

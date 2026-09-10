@@ -42,7 +42,7 @@ data class ProviderRequestPolicy(
     val allowStop: Boolean = true,
     /** OpenAI o-series / GPT-5 reasoning effort parameter. */
     val supportsReasoningEffort: Boolean = false,
-    /** OpenAI GPT-5.2+ verbosity parameter. */
+    /** OpenAI GPT-5 verbosity parameter. */
     val supportsVerbosity: Boolean = false,
     val streaming: Boolean = true,
     /** Whether the provider supports stream_options (e.g. {"include_usage": true}). */
@@ -70,6 +70,8 @@ object ProviderRequestPolicies {
     ): ProviderRequestPolicy = when (provider) {
         AiProvider.OPENAI -> openAiPolicy(modelId, reasoningEffort)
         AiProvider.GROQ -> ProviderRequestPolicy(
+            tokenLimitField = TokenLimitField.MAX_COMPLETION_TOKENS,
+            allowPenalties = false,
             supportsStreamOptions = true,
             supportsAudioTranscriptions = true,
             transcriptionModel = "whisper-large-v3-turbo",
@@ -77,6 +79,7 @@ object ProviderRequestPolicies {
         )
         AiProvider.XAI -> xaiPolicy(modelId, capabilities)
         AiProvider.DEEPSEEK -> ProviderRequestPolicy(
+            supportsStreamOptions = true,
             // Reasoning models reject sampling params and return reasoning_content.
             allowSampling = !capabilities.reasoning,
             allowPenalties = !capabilities.reasoning,
@@ -88,18 +91,21 @@ object ProviderRequestPolicies {
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
         AiProvider.MOONSHOT -> ProviderRequestPolicy(
-            // Kimi does not accept frequency_penalty / presence_penalty.
+            // Thinking Kimi models require fixed sampling values; use server defaults.
+            allowSampling = !modelId.startsWith("kimi-k"),
             allowPenalties = false,
-            supportsStreamOptions = true,
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
         AiProvider.ZHIPU -> ProviderRequestPolicy(
             // Zhipu does not accept frequency_penalty / presence_penalty.
             allowPenalties = false,
+            imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
+        )
+        AiProvider.ALIBABA -> ProviderRequestPolicy(
             supportsStreamOptions = true,
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
-        AiProvider.ALIBABA, AiProvider.MISTRAL, AiProvider.BAIDU, AiProvider.CUSTOM -> ProviderRequestPolicy(
+        AiProvider.MISTRAL, AiProvider.BAIDU, AiProvider.CUSTOM -> ProviderRequestPolicy(
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
         AiProvider.LOCAL_GEMMA -> ProviderRequestPolicy(
@@ -121,11 +127,25 @@ object ProviderRequestPolicies {
     internal fun isOpenAiGpt5Family(modelId: String): Boolean =
         modelId.startsWith("gpt-5")
 
-    /** GPT-5.x minor version >= 2 supports the verbosity parameter. */
-    internal fun openAiSupportsVerbosity(modelId: String): Boolean {
-        val match = Regex("^gpt-5\\.(\\d+).*").find(modelId) ?: return false
-        val minor = match.groupValues[1].toIntOrNull() ?: return false
-        return minor >= 2
+    /** Verbosity was introduced with GPT-5. */
+    internal fun openAiSupportsVerbosity(modelId: String): Boolean = isOpenAiGpt5Family(modelId)
+
+    /** Omit unspecified or unsupported effort instead of forcing `minimal` on every model. */
+    fun openAiReasoningEffort(modelId: String, requested: String?): String? {
+        if (requested == null) return null
+        val originalGpt5 = modelId == "gpt-5" ||
+            modelId.startsWith("gpt-5-mini") || modelId.startsWith("gpt-5-nano") ||
+            modelId.startsWith("gpt-5-2025")
+        val allowed = when {
+            modelId == "gpt-5-pro" || modelId.startsWith("gpt-5-pro-") -> setOf("high")
+            modelId.contains("-pro") && isOpenAiGpt5Family(modelId) -> setOf("medium", "high", "xhigh")
+            isOpenAiOSeries(modelId) -> setOf("low", "medium", "high")
+            originalGpt5 -> setOf("minimal", "low", "medium", "high")
+            modelId.startsWith("gpt-5.1") -> setOf("none", "low", "medium", "high")
+            isOpenAiGpt5Family(modelId) -> setOf("none", "low", "medium", "high", "xhigh")
+            else -> emptySet()
+        }
+        return requested.takeIf { it in allowed }
     }
 
     /** Models verified as Responses-API-first on the OpenAI platform (2026-08-02). */
@@ -136,7 +156,8 @@ object ProviderRequestPolicies {
         val oSeries = isOpenAiOSeries(modelId)
         val gpt5 = isOpenAiGpt5Family(modelId)
         val reasoningModel = oSeries || gpt5
-        val samplingLocked = oSeries || (gpt5 && reasoningEffort != "none")
+        val effectiveEffort = openAiReasoningEffort(modelId, reasoningEffort)
+        val samplingLocked = oSeries || (gpt5 && effectiveEffort != "none")
         return ProviderRequestPolicy(
             tokenLimitField = if (reasoningModel) TokenLimitField.MAX_COMPLETION_TOKENS else TokenLimitField.MAX_TOKENS,
             allowSampling = !samplingLocked,

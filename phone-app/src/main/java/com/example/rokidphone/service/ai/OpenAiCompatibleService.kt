@@ -118,14 +118,30 @@ open class OpenAiCompatibleService(
     private fun isSamplingLocked(): Boolean = !policy.allowSampling
 
     private fun effectiveReasoningEffort(): String? =
-        if (requiresReasoningEffort()) reasoningEffort ?: "minimal" else null
+        if (requiresReasoningEffort()) ProviderRequestPolicies.openAiReasoningEffort(modelId, reasoningEffort) else null
 
     /**
      * Hook for subclasses to mutate the chat request JSON just before it is sent
      * (e.g. DeepSeek reasoner strips `temperature`).
      */
     protected open fun postProcessRequestJson(json: JSONObject) {
-        // Default: no-op. Subclasses override to inject provider-specific fields.
+        if (providerType == AiProvider.ZHIPU || providerType == AiProvider.MOONSHOT) {
+            if (json.has("temperature")) {
+                json.put("temperature", json.getDouble("temperature").coerceIn(0.0, 1.0))
+            }
+        }
+        if (providerType == AiProvider.ZHIPU && json.has("top_p")) {
+            json.put("top_p", json.getDouble("top_p").coerceIn(0.01, 1.0))
+        }
+        // Original open Qwen3 hybrid models only support thinking in streaming mode.
+        val streamingThinkingModels = setOf(
+            "qwen3-235b-a22b", "qwen3-32b", "qwen3-30b-a3b", "qwen3-14b",
+            "qwen3-8b", "qwen3-4b", "qwen3-1.7b", "qwen3-0.6b"
+        )
+        if (providerType == AiProvider.ALIBABA && !json.optBoolean("stream") &&
+            modelId in streamingThinkingModels) {
+            json.put("enable_thinking", false)
+        }
     }
 
     /**
@@ -635,8 +651,10 @@ open class OpenAiCompatibleService(
                     }
                     return StreamParseResult(events, usage)
                 }
-                "response.failed" -> {
+                "response.failed", "response.incomplete", "error" -> {
                     val msg = json.optJSONObject("response")?.optJSONObject("error")?.optString("message")
+                        ?: json.optJSONObject("response")?.optJSONObject("incomplete_details")?.optString("reason")
+                        ?: json.optString("message", "Response did not complete")
                     events += AiStreamEvent.Error(
                         ProviderErrorKind.UNKNOWN,
                         ProviderApiException.sanitize(msg)
@@ -897,13 +915,14 @@ open class OpenAiCompatibleService(
                     })
                 }
 
-                val requestJson = JSONObject().apply {
-                    put("model", modelId)
-                    put("messages", messages)
-                    putTokenLimit(this, 10)
+                val endpoint = if (useResponsesApi) "responses" else "chat/completions"
+                val requestJson = if (useResponsesApi) {
+                    buildResponsesBody(buildResponsesInput("Hello"), stream = false)
+                } else {
+                    buildChatCompletionsBody(messages, stream = false)
                 }
 
-                val request = buildJsonRequest(buildUrl("chat/completions"), requestJson)
+                val request = buildJsonRequest(buildUrl(endpoint), requestJson)
 
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {

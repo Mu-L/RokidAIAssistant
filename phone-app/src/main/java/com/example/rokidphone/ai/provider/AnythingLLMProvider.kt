@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
-import java.net.URLEncoder
 import java.util.Locale
 
 /**
@@ -93,8 +93,11 @@ class AnythingLLMProvider(
 
                 val request = Request.Builder()
                     .url(
-                        "${setting.serverUrl.trimEnd('/')}/api/v1/workspace/" +
-                            URLEncoder.encode(setting.workspaceSlug, "UTF-8") + "/chat"
+                        setting.serverUrl.trimEnd('/').toHttpUrl().newBuilder()
+                            .addPathSegments("api/v1/workspace")
+                            .addPathSegment(setting.workspaceSlug)
+                            .addPathSegment("chat")
+                            .build()
                     )
                     .post(requestBody.toRequestBody(jsonMediaType))
                     .addHeader("Authorization", "Bearer ${setting.apiKey}")

@@ -58,7 +58,7 @@ class OpenAiCompatibleServiceTest {
 
     @Test
     fun `chat - request body format is correct`() = runTest {
-        // gpt-5.x defaults to reasoning_effort=minimal, which locks sampling params.
+        // gpt-5.x uses the server default reasoning effort, which locks sampling params.
         // Use an explicit "none" to keep temperature/top_p/penalties in the request
         // so this test verifies the "classic" OpenAI chat completion shape.
         val service = OpenAiCompatibleService(
@@ -547,7 +547,7 @@ class OpenAiCompatibleServiceTest {
         service.chat("hi")
 
         val body = JSONObject(mockServer.server.takeRequest().body.readUtf8())
-        assertThat(body.getString("reasoning_effort")).isEqualTo("minimal")
+        assertThat(body.has("reasoning_effort")).isFalse()
         assertThat(body.getString("verbosity")).isEqualTo("medium")
         // Sampling params are stripped when effort is non-"none".
         assertThat(body.has("temperature")).isFalse()
@@ -569,7 +569,7 @@ class OpenAiCompatibleServiceTest {
         service.chat("hi")
 
         val body = JSONObject(mockServer.server.takeRequest().body.readUtf8())
-        assertThat(body.getString("reasoning_effort")).isEqualTo("minimal")
+        assertThat(body.has("reasoning_effort")).isFalse()
         assertThat(body.has("verbosity")).isFalse()
     }
 
@@ -616,7 +616,7 @@ class OpenAiCompatibleServiceTest {
     }
 
     @Test
-    fun `chat - o3 emits reasoning_effort and strips sampling params`() = runTest {
+    fun `chat - o3 uses server reasoning default and strips sampling params`() = runTest {
         val service = createService(modelId = "o3")
         mockServer.server.enqueue(
             jsonResponse(TestFixtures.MockResponses.openAiChatSuccess("ok"))
@@ -625,7 +625,7 @@ class OpenAiCompatibleServiceTest {
         service.chat("hi")
 
         val body = JSONObject(mockServer.server.takeRequest().body.readUtf8())
-        assertThat(body.getString("reasoning_effort")).isEqualTo("minimal")
+        assertThat(body.has("reasoning_effort")).isFalse()
         assertThat(body.has("verbosity")).isFalse()
         assertThat(body.has("temperature")).isFalse()
         assertThat(body.has("top_p")).isFalse()

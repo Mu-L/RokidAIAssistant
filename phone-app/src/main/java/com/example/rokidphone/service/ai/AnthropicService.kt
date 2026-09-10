@@ -59,6 +59,15 @@ class AnthropicService(
         private const val HISTORY_TURNS = 6
         /** Cap on max_tokens for vision requests. */
         private const val MAX_VISION_TOKENS = 4096
+
+        /** Claude 4.7 and later reject custom sampling parameters. */
+        internal fun supportsTemperature(modelId: String): Boolean {
+            val version = Regex("^claude-(?:opus|sonnet|haiku)-(\\d+)(?:-(\\d{1,2})(?:-|$))?")
+                .find(modelId) ?: return modelId.startsWith("claude-3")
+            val major = version.groupValues[1].toIntOrNull() ?: return false
+            val minor = version.groupValues[2].toIntOrNull() ?: 0
+            return major < 4 || (major == 4 && minor <= 6)
+        }
     }
     
     /**
@@ -123,7 +132,9 @@ class AnthropicService(
             put("model", modelId)
             put("max_tokens", maxTokens)
             // Claude 4.x: Do NOT set both temperature and top_p simultaneously
-            put("temperature", temperature.toDouble())
+            if (supportsTemperature(modelId)) {
+                put("temperature", temperature.toDouble().coerceIn(0.0, 1.0))
+            }
             put("system", getFullSystemPrompt())
             put("messages", messages)
         }
@@ -331,7 +342,9 @@ class AnthropicService(
                 put("model", modelId)
                 put("max_tokens", maxTokens.coerceAtMost(MAX_VISION_TOKENS))
                 // Claude 4.x: Do NOT set both temperature and top_p simultaneously
-                put("temperature", temperature.toDouble())
+                if (supportsTemperature(modelId)) {
+                    put("temperature", temperature.toDouble().coerceIn(0.0, 1.0))
+                }
                 put("system", "You are an image analysis assistant. Please provide objective descriptions based on the image content. If unable to determine, please explain.")
                 put("messages", messages)
             }

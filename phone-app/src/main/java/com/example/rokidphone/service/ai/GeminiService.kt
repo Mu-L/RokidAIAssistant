@@ -110,7 +110,7 @@ class GeminiService(
         }
 
         val request = Request.Builder()
-            .url("$streamApiUrl?alt=sse&key=$apiKey")
+            .url("$streamApiUrl?alt=sse")
             .addHeader("Content-Type", "application/json")
             .addHeader("x-goog-api-key", apiKey)
             .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
@@ -286,7 +286,7 @@ Rules:
                 Log.d(TAG, "Sending transcription request to Gemini (attempt $attempt)")
                 
                 val request = Request.Builder()
-                    .url("$apiUrl?key=$apiKey")
+                    .url("$apiUrl")
                     .addHeader("Content-Type", "application/json")
                     .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
@@ -359,7 +359,7 @@ Rules:
                 Log.d(TAG, "Sending audio file transcription request to Gemini (attempt $attempt)")
                 
                 val request = Request.Builder()
-                    .url("$apiUrl?key=$apiKey")
+                    .url("$apiUrl")
                     .addHeader("Content-Type", "application/json")
                     .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
@@ -428,7 +428,7 @@ Rules:
                 Log.d(TAG, "Sending chat request to Gemini (attempt $attempt)")
                 
                 val request = Request.Builder()
-                    .url("$apiUrl?key=$apiKey")
+                    .url("$apiUrl")
                     .addHeader("Content-Type", "application/json")
                     .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
@@ -508,7 +508,7 @@ Rules:
                 Log.d(TAG, "Sending image analysis request to Gemini (attempt $attempt)")
                 
                 val request = Request.Builder()
-                    .url("$apiUrl?key=$apiKey")
+                    .url("$apiUrl")
                     .addHeader("Content-Type", "application/json")
                     .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))

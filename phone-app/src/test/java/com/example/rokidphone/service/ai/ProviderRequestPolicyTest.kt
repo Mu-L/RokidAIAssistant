@@ -51,8 +51,8 @@ class ProviderRequestPolicyTest {
     }
 
     @Test
-    fun `OpenAI verbosity only for gpt-5 minor version 2 and above`() {
-        assertThat(ProviderRequestPolicies.openAiSupportsVerbosity("gpt-5.1")).isFalse()
+    fun `OpenAI verbosity is supported since GPT-5`() {
+        assertThat(ProviderRequestPolicies.openAiSupportsVerbosity("gpt-5.1")).isTrue()
         assertThat(ProviderRequestPolicies.openAiSupportsVerbosity("gpt-5.2")).isTrue()
         assertThat(ProviderRequestPolicies.openAiSupportsVerbosity("gpt-5.6-luna")).isTrue()
         assertThat(ProviderRequestPolicies.openAiSupportsVerbosity("gpt-4o")).isFalse()
@@ -78,7 +78,8 @@ class ProviderRequestPolicyTest {
             val p = policyFor(provider, modelId)
             assertWithMessage("$provider/$modelId").that(p.supportsReasoningEffort).isFalse()
             assertWithMessage("$provider/$modelId").that(p.supportsVerbosity).isFalse()
-            assertWithMessage("$provider/$modelId").that(p.tokenLimitField).isEqualTo(TokenLimitField.MAX_TOKENS)
+            val tokenField = if (provider == AiProvider.GROQ) TokenLimitField.MAX_COMPLETION_TOKENS else TokenLimitField.MAX_TOKENS
+            assertWithMessage("$provider/$modelId").that(p.tokenLimitField).isEqualTo(tokenField)
         }
     }
 
@@ -112,10 +113,10 @@ class ProviderRequestPolicyTest {
     fun `stream options enabled only for supported providers`() {
         assertThat(policyFor(AiProvider.OPENAI, "gpt-5.1").supportsStreamOptions).isTrue()
         assertThat(policyFor(AiProvider.GROQ, "llama-3.3-70b-versatile").supportsStreamOptions).isTrue()
-        assertThat(policyFor(AiProvider.MOONSHOT, "kimi-k2.5").supportsStreamOptions).isTrue()
-        assertThat(policyFor(AiProvider.ZHIPU, "glm-5.1").supportsStreamOptions).isTrue()
+        assertThat(policyFor(AiProvider.MOONSHOT, "kimi-k2.5").supportsStreamOptions).isFalse()
+        assertThat(policyFor(AiProvider.ZHIPU, "glm-5.1").supportsStreamOptions).isFalse()
 
-        assertThat(policyFor(AiProvider.DEEPSEEK, "deepseek-chat").supportsStreamOptions).isFalse()
+        assertThat(policyFor(AiProvider.DEEPSEEK, "deepseek-chat").supportsStreamOptions).isTrue()
         assertThat(policyFor(AiProvider.PERPLEXITY, "sonar").supportsStreamOptions).isFalse()
         assertThat(policyFor(AiProvider.CUSTOM, "custom-model").supportsStreamOptions).isFalse()
     }

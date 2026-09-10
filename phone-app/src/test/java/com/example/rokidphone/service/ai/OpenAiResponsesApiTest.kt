@@ -80,13 +80,13 @@ class OpenAiResponsesApiTest {
     }
 
     @Test
-    fun `responses - gpt-5_6 sends reasoning effort as object not flat param`() = runTest {
+    fun `responses - gpt-5_6 leaves unspecified reasoning effort to server`() = runTest {
         mockServer.server.enqueue(jsonResponse(responsesSuccess("ok")))
 
         responsesService().chat("hello")
 
         val body = JSONObject(mockServer.server.takeRequest().body.readUtf8())
-        assertThat(body.getJSONObject("reasoning").getString("effort")).isEqualTo("minimal")
+        assertThat(body.has("reasoning")).isFalse()
         assertThat(body.has("reasoning_effort")).isFalse()
     }
 

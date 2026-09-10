@@ -26,7 +26,7 @@ object ChatContentParser {
                         is JSONObject -> {
                             val type = item.optString("type", "")
                             if (type == "text" || type.isEmpty()) {
-                                val text = item.optString("text", "")
+                                val text = item.opt("text") as? String ?: ""
                                 if (text.isNotEmpty()) {
                                     sb.append(text)
                                 }
