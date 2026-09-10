@@ -45,6 +45,8 @@ data class ProviderRequestPolicy(
     /** OpenAI GPT-5.2+ verbosity parameter. */
     val supportsVerbosity: Boolean = false,
     val streaming: Boolean = true,
+    /** Whether the provider supports stream_options (e.g. {"include_usage": true}). */
+    val supportsStreamOptions: Boolean = false,
     val imageContentFormat: ImageContentFormat = ImageContentFormat.OPENAI_IMAGE_URL,
     /** Provider exposes a working /audio/transcriptions endpoint. */
     val supportsAudioTranscriptions: Boolean = false,
@@ -68,6 +70,7 @@ object ProviderRequestPolicies {
     ): ProviderRequestPolicy = when (provider) {
         AiProvider.OPENAI -> openAiPolicy(modelId, reasoningEffort)
         AiProvider.GROQ -> ProviderRequestPolicy(
+            supportsStreamOptions = true,
             supportsAudioTranscriptions = true,
             transcriptionModel = "whisper-large-v3-turbo",
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
@@ -84,8 +87,19 @@ object ProviderRequestPolicies {
             allowPenalties = false,
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
-        AiProvider.ALIBABA, AiProvider.ZHIPU, AiProvider.MOONSHOT,
-        AiProvider.MISTRAL, AiProvider.BAIDU, AiProvider.CUSTOM -> ProviderRequestPolicy(
+        AiProvider.MOONSHOT -> ProviderRequestPolicy(
+            // Kimi does not accept frequency_penalty / presence_penalty.
+            allowPenalties = false,
+            supportsStreamOptions = true,
+            imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
+        )
+        AiProvider.ZHIPU -> ProviderRequestPolicy(
+            // Zhipu does not accept frequency_penalty / presence_penalty.
+            allowPenalties = false,
+            supportsStreamOptions = true,
+            imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
+        )
+        AiProvider.ALIBABA, AiProvider.MISTRAL, AiProvider.BAIDU, AiProvider.CUSTOM -> ProviderRequestPolicy(
             imageContentFormat = if (capabilities.imageInput) ImageContentFormat.OPENAI_IMAGE_URL else ImageContentFormat.NONE
         )
         AiProvider.LOCAL_GEMMA -> ProviderRequestPolicy(
@@ -122,14 +136,14 @@ object ProviderRequestPolicies {
         val oSeries = isOpenAiOSeries(modelId)
         val gpt5 = isOpenAiGpt5Family(modelId)
         val reasoningModel = oSeries || gpt5
-        val effectiveEffort = if (reasoningModel) reasoningEffort ?: "minimal" else null
-        val samplingLocked = oSeries || (gpt5 && effectiveEffort != null && effectiveEffort != "none")
+        val samplingLocked = oSeries || (gpt5 && reasoningEffort != "none")
         return ProviderRequestPolicy(
             tokenLimitField = if (reasoningModel) TokenLimitField.MAX_COMPLETION_TOKENS else TokenLimitField.MAX_TOKENS,
             allowSampling = !samplingLocked,
             allowPenalties = !samplingLocked,
             supportsReasoningEffort = reasoningModel,
             supportsVerbosity = openAiSupportsVerbosity(modelId),
+            supportsStreamOptions = true,
             supportsAudioTranscriptions = true,
             transcriptionModel = "whisper-1",
             imageContentFormat = ImageContentFormat.OPENAI_IMAGE_URL

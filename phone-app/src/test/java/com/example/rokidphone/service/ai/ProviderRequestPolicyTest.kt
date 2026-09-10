@@ -100,6 +100,27 @@ class ProviderRequestPolicyTest {
     }
 
     @Test
+    fun `Moonshot and Zhipu never receive penalty params`() {
+        val moonshot = policyFor(AiProvider.MOONSHOT, "kimi-k2.5")
+        assertThat(moonshot.allowPenalties).isFalse()
+
+        val zhipu = policyFor(AiProvider.ZHIPU, "glm-5.1")
+        assertThat(zhipu.allowPenalties).isFalse()
+    }
+
+    @Test
+    fun `stream options enabled only for supported providers`() {
+        assertThat(policyFor(AiProvider.OPENAI, "gpt-5.1").supportsStreamOptions).isTrue()
+        assertThat(policyFor(AiProvider.GROQ, "llama-3.3-70b-versatile").supportsStreamOptions).isTrue()
+        assertThat(policyFor(AiProvider.MOONSHOT, "kimi-k2.5").supportsStreamOptions).isTrue()
+        assertThat(policyFor(AiProvider.ZHIPU, "glm-5.1").supportsStreamOptions).isTrue()
+
+        assertThat(policyFor(AiProvider.DEEPSEEK, "deepseek-chat").supportsStreamOptions).isFalse()
+        assertThat(policyFor(AiProvider.PERPLEXITY, "sonar").supportsStreamOptions).isFalse()
+        assertThat(policyFor(AiProvider.CUSTOM, "custom-model").supportsStreamOptions).isFalse()
+    }
+
+    @Test
     fun `Grok 4 reasoning-only strips penalties and stop`() {
         val p = policyFor(AiProvider.XAI, "grok-4")
         assertThat(p.allowPenalties).isFalse()

@@ -112,6 +112,7 @@ class GeminiService(
         val request = Request.Builder()
             .url("$streamApiUrl?alt=sse&key=$apiKey")
             .addHeader("Content-Type", "application/json")
+            .addHeader("x-goog-api-key", apiKey)
             .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
             .build()
         val call = client.newCall(request)
@@ -130,11 +131,32 @@ class GeminiService(
                     trySend(AiStreamEvent.Error(error.kind, error.message ?: "Provider error", error.httpStatus))
                     return@use
                 }
-                val source = response.body?.source() ?: return@use
+                val source = response.body?.source() ?: run {
+                    failed = true
+                    trySend(
+                        AiStreamEvent.Error(
+                            ProviderErrorKind.UNKNOWN,
+                            "Empty response body (HTTP ${response.code})"
+                        )
+                    )
+                    return@use
+                }
                 SseParser.readEvents(source) { event ->
                     if (event is SseParser.SseEvent.Data) {
                         try {
                             val json = JSONObject(event.payload)
+                            if (json.has("error")) {
+                                failed = true
+                                val errMsg = json.optJSONObject("error")?.optString("message")
+                                    ?: json.optString("error")
+                                trySend(
+                                    AiStreamEvent.Error(
+                                        ProviderErrorKind.UNKNOWN,
+                                        ProviderApiException.sanitize(errMsg)
+                                    )
+                                )
+                                return@readEvents
+                            }
                             val parts = json.optJSONArray("candidates")
                                 ?.optJSONObject(0)
                                 ?.optJSONObject("content")
@@ -266,6 +288,7 @@ Rules:
                 val request = Request.Builder()
                     .url("$apiUrl?key=$apiKey")
                     .addHeader("Content-Type", "application/json")
+                    .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
                     .build()
                 
@@ -338,6 +361,7 @@ Rules:
                 val request = Request.Builder()
                     .url("$apiUrl?key=$apiKey")
                     .addHeader("Content-Type", "application/json")
+                    .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
                     .build()
                 
@@ -406,6 +430,7 @@ Rules:
                 val request = Request.Builder()
                     .url("$apiUrl?key=$apiKey")
                     .addHeader("Content-Type", "application/json")
+                    .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
                     .build()
                 
@@ -485,6 +510,7 @@ Rules:
                 val request = Request.Builder()
                     .url("$apiUrl?key=$apiKey")
                     .addHeader("Content-Type", "application/json")
+                    .addHeader("x-goog-api-key", apiKey)
                     .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
                     .build()
                 

@@ -339,7 +339,7 @@ open class OpenAiCompatibleService(
             }
 
             put("stream", stream)
-            if (stream) {
+            if (stream && p.supportsStreamOptions) {
                 put("stream_options", JSONObject().put("include_usage", true))
             }
         }
@@ -372,7 +372,7 @@ open class OpenAiCompatibleService(
                     val choices = json.optJSONArray("choices")
                     val messageObj = choices?.optJSONObject(0)?.optJSONObject("message")
                     if (messageObj != null) onAssistantMessage(messageObj)
-                    val text = messageObj?.optString("content", "")?.trim()
+                    val text = ChatContentParser.extractText(messageObj?.opt("content"))
 
                     if (!text.isNullOrEmpty()) {
                         val finalText = augmentResponseText(json, text)
@@ -534,7 +534,16 @@ open class OpenAiCompatibleService(
                     trySend(AiStreamEvent.Error(error.kind, error.message ?: "Provider error", error.httpStatus))
                     return@use
                 }
-                val source = response.body?.source() ?: return@use
+                val source = response.body?.source() ?: run {
+                    failed = true
+                    trySend(
+                        AiStreamEvent.Error(
+                            ProviderErrorKind.UNKNOWN,
+                            "Empty response body (HTTP ${response.code})"
+                        )
+                    )
+                    return@use
+                }
                 SseParser.readEvents(source) { event ->
                     when (event) {
                         is SseParser.SseEvent.Done -> Unit
@@ -543,6 +552,9 @@ open class OpenAiCompatibleService(
                                 event.payload, fullText, emittedCitations
                             )
                             parsed.usage?.let { usage = it }
+                            if (parsed.hasError) {
+                                failed = true
+                            }
                             parsed.events.forEach { trySend(it) }
                         }
                     }
@@ -573,7 +585,8 @@ open class OpenAiCompatibleService(
 
     private class StreamParseResult(
         val events: List<AiStreamEvent>,
-        val usage: AiStreamEvent.Usage?
+        val usage: AiStreamEvent.Usage?,
+        val hasError: Boolean = false
     )
 
     /** Parse one SSE payload from either Chat Completions or Responses streams. */
@@ -586,6 +599,17 @@ open class OpenAiCompatibleService(
         var usage: AiStreamEvent.Usage? = null
         try {
             val json = JSONObject(payload)
+
+            if (json.has("error")) {
+                val errObj = json.optJSONObject("error")
+                val message = errObj?.optString("message").takeUnless { it.isNullOrBlank() }
+                    ?: json.optString("error")
+                events += AiStreamEvent.Error(
+                    ProviderErrorKind.UNKNOWN,
+                    ProviderApiException.sanitize(message)
+                )
+                return StreamParseResult(events, null, hasError = true)
+            }
 
             // ---------- Responses API events ----------
             when (json.optString("type")) {
@@ -617,7 +641,7 @@ open class OpenAiCompatibleService(
                         ProviderErrorKind.UNKNOWN,
                         ProviderApiException.sanitize(msg)
                     )
-                    return StreamParseResult(events, null)
+                    return StreamParseResult(events, null, hasError = true)
                 }
                 "response.output_item.done" -> {
                     val item = json.optJSONObject("item")
@@ -639,7 +663,7 @@ open class OpenAiCompatibleService(
                 val choice = choices.optJSONObject(0)
                 val delta = choice?.optJSONObject("delta")
                 if (delta != null) {
-                    val content = delta.optString("content", "")
+                    val content = ChatContentParser.extractText(delta.opt("content")) ?: ""
                     if (content.isNotEmpty()) {
                         fullText.append(content)
                         events += AiStreamEvent.TextDelta(content)
@@ -816,9 +840,8 @@ open class OpenAiCompatibleService(
         }
         val json = JSONObject(responseBody)
         val choices = json.optJSONArray("choices")
-        return choices?.optJSONObject(0)
-            ?.optJSONObject("message")
-            ?.optString("content", "")?.trim()
+        val messageObj = choices?.optJSONObject(0)?.optJSONObject("message")
+        return ChatContentParser.extractText(messageObj?.opt("content"))
             ?: "Unable to analyze image."
     }
 

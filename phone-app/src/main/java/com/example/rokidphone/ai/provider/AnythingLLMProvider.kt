@@ -101,7 +101,7 @@ class AnythingLLMProvider(
                     .build()
 
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body.string()
+                    val responseBody = response.body?.string().orEmpty()
                     if (response.isSuccessful) {
                         val json = JSONObject(responseBody)
                         val text = json.optNullableString("textResponse")
