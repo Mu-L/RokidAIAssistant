@@ -538,7 +538,7 @@ class OpenAiCompatibleServiceTest {
     // ==================== v0.12.0 reasoning_effort / verbosity ====================
 
     @Test
-    fun `chat - gpt-5_4 defaults to reasoning_effort minimal and verbosity medium`() = runTest {
+    fun `chat - gpt-5_4 uses server reasoning default and verbosity medium`() = runTest {
         val service = createService(modelId = "gpt-5.4")
         mockServer.server.enqueue(
             jsonResponse(TestFixtures.MockResponses.openAiChatSuccess("ok"))
@@ -560,7 +560,7 @@ class OpenAiCompatibleServiceTest {
     }
 
     @Test
-    fun `chat - gpt-5_1 does not emit verbosity because 5_1 predates verbosity support`() = runTest {
+    fun `chat - gpt-5_1 sends verbosity and leaves reasoning effort unspecified`() = runTest {
         val service = createService(modelId = "gpt-5.1")
         mockServer.server.enqueue(
             jsonResponse(TestFixtures.MockResponses.openAiChatSuccess("ok"))
@@ -570,7 +570,7 @@ class OpenAiCompatibleServiceTest {
 
         val body = JSONObject(mockServer.server.takeRequest().body.readUtf8())
         assertThat(body.has("reasoning_effort")).isFalse()
-        assertThat(body.has("verbosity")).isFalse()
+        assertThat(body.getString("verbosity")).isEqualTo("medium")
     }
 
     @Test
