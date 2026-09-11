@@ -23,6 +23,8 @@ import java.util.Locale
 import java.util.UUID
 
 private const val TAG = "RecordingRepository"
+private const val GLASSES_SAMPLE_RATE = 16000
+private const val GLASSES_BYTES_PER_SAMPLE = 2
 
 /**
  * Recording state for UI
@@ -68,10 +70,6 @@ class RecordingRepository private constructor(
     private var durationUpdateJob: kotlinx.coroutines.Job? = null
     
     companion object {
-        // Glasses audio format: 16 kHz, 16-bit, mono PCM (2 bytes per sample)
-        private const val GLASSES_SAMPLE_RATE = 16000
-        private const val GLASSES_BYTES_PER_SAMPLE = 2
-
         @Volatile
         private var instance: RecordingRepository? = null
         
@@ -646,7 +644,7 @@ internal object RecordingQueryEscaper {
 internal object WavEncoder {
     fun pcmToWav(
         pcmData: ByteArray,
-        sampleRate: Int = 16000,
+        sampleRate: Int = GLASSES_SAMPLE_RATE,
         channels: Int = 1,
         bitsPerSample: Int = 16
     ): ByteArray {
