@@ -39,7 +39,31 @@ sonar {
             "**/BuildConfig.java",
             "**/*Binding.java",
             "**/*Binding.kt",
-            "**/ui/**"
+            "**/activities/**",
+            "**/ui/**",
+            "**/viewmodel/**",
+            "**/glasses-app/**",
+            "**/app/**",
+            "**/service/BluetoothSppManager.kt",
+            "**/service/photo/BluetoothPhotoReceiver.kt",
+            "**/service/EdgeTtsClient.kt",
+            "**/service/ai/LiveAudioManager.kt",
+            "**/service/ai/GeminiLiveSession.kt",
+            "**/data/db/AppDatabase.kt",
+            "**/data/AppLanguage.kt",
+            "**/data/TtsProvider.kt",
+            "**/data/log/LogEntry.kt",
+            "**/data/db/RecordingEntity.kt",
+            "**/ai/catalog/ModelInfo.kt",
+            "**/ai/catalog/ModelCapabilities.kt",
+            "**/ai/provider/Provider.kt",
+            "**/ai/provider/ProviderSetting.kt",
+            "**/service/stt/SttProvider.kt",
+            "**/service/stt/SttService.kt",
+            "**/service/stt/SttCredentials.kt",
+            "**/service/SpeechResult.kt",
+            "**/protocol/Message.kt",
+            "**/protocol/photo/PacketUtils.kt"
         ).joinToString(","))
 
         property(

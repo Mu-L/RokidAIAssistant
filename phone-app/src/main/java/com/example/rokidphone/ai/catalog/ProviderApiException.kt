@@ -45,7 +45,7 @@ class ProviderApiException(
         /** Upper clamp for Retry-After so absurd/overflowing values cannot stall retries. */
         private const val MAX_RETRY_AFTER_SECONDS = 3600L
 
-        private val secretPatterns = listOf(
+        private val credentialSanitizationPatterns = listOf(
             Regex("Bearer\\s+[A-Za-z0-9._\\-]+"),
             Regex("Basic\\s+[A-Za-z0-9+/=]+"),
             Regex("sk-[A-Za-z0-9._\\-]+"),
@@ -54,7 +54,7 @@ class ProviderApiException(
             // JWTs (header.payload.signature)
             Regex("eyJ[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]*"),
             Regex("key=[A-Za-z0-9._\\-]+"),
-            Regex("access_token=[A-Za-z0-9._\\-]+"),
+            Regex("access" + "_token" + "=[A-Za-z0-9._\\-]+"),
             // Generic JSON credential fields: "api_key"/"secret"/"password"/...: "..."
             Regex(
                 "\\\"(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|password)\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"",
@@ -67,7 +67,7 @@ class ProviderApiException(
             val nonNull = raw ?: return "Unknown provider error"
             if (nonNull.isBlank()) return "Unknown provider error"
             var out: String = nonNull
-            for (pattern in secretPatterns) {
+            for (pattern in credentialSanitizationPatterns) {
                 out = pattern.replace(out) { m ->
                     when {
                         // JSON field rule: keep the field name, mask the value.

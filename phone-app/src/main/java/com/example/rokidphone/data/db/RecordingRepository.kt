@@ -81,9 +81,6 @@ class RecordingRepository private constructor(
             }
         }
 
-        /** Escape LIKE wildcards ('%', '_') and the escape char ('\') in user input. */
-        private fun escapeLikeQuery(query: String): String =
-            query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     }
     
     // ==================== Data Access ====================
@@ -117,7 +114,8 @@ class RecordingRepository private constructor(
     /**
      * Search recordings
      */
-    fun searchRecordings(query: String): Flow<List<RecordingEntity>> = recordingDao.searchRecordings(escapeLikeQuery(query))
+    fun searchRecordings(query: String): Flow<List<RecordingEntity>> =
+        recordingDao.searchRecordings(RecordingQueryEscaper.escapeLikeQuery(query))
     
     // ==================== Recording Control ====================
     
@@ -310,7 +308,10 @@ class RecordingRepository private constructor(
                     try {
                         recordingDao.insert(recording)
                     } catch (e: Exception) {
-                        File(recording.filePath).delete()
+                        val incompleteFile = File(recording.filePath)
+                        if (incompleteFile.exists() && !incompleteFile.delete()) {
+                            Log.w(TAG, "Failed to delete incomplete recording: ${incompleteFile.absolutePath}")
+                        }
                         throw e
                     }
                     Log.d(TAG, "Phone recording saved: ${recording.id}")
@@ -500,7 +501,7 @@ class RecordingRepository private constructor(
             outputFile = file
             
             // Convert PCM to WAV and save
-            val wavData = pcmToWav(audioData)
+            val wavData = WavEncoder.pcmToWav(audioData)
             file.writeBytes(wavData)
             
             // Estimate duration based on audio data size
@@ -530,7 +531,11 @@ class RecordingRepository private constructor(
             
             recording
         } catch (e: CancellationException) {
-            outputFile?.delete()
+            outputFile?.let { file ->
+                if (file.exists() && !file.delete()) {
+                    Log.w(TAG, "Failed to delete incomplete glasses recording: ${file.absolutePath}")
+                }
+            }
             throw e
         } catch (e: Exception) {
             outputFile?.let { file ->
@@ -541,51 +546,6 @@ class RecordingRepository private constructor(
             Log.e(TAG, "Failed to save glasses recording", e)
             null
         }
-    }
-    
-    /**
-     * Convert PCM audio to WAV format
-     */
-    private fun pcmToWav(pcmData: ByteArray, sampleRate: Int = GLASSES_SAMPLE_RATE, channels: Int = 1, bitsPerSample: Int = 16): ByteArray {
-        val byteRate = sampleRate * channels * bitsPerSample / 8
-        val blockAlign = channels * bitsPerSample / 8
-        val dataSize = pcmData.size
-        val totalSize = 36 + dataSize
-        
-        val output = java.io.ByteArrayOutputStream()
-        
-        // RIFF header
-        output.write("RIFF".toByteArray())
-        output.write(intToBytes(totalSize, 4))
-        output.write("WAVE".toByteArray())
-        
-        // fmt chunk
-        output.write("fmt ".toByteArray())
-        output.write(intToBytes(16, 4))  // chunk size
-        output.write(intToBytes(1, 2))   // audio format (PCM)
-        output.write(intToBytes(channels, 2))
-        output.write(intToBytes(sampleRate, 4))
-        output.write(intToBytes(byteRate, 4))
-        output.write(intToBytes(blockAlign, 2))
-        output.write(intToBytes(bitsPerSample, 2))
-        
-        // data chunk
-        output.write("data".toByteArray())
-        output.write(intToBytes(dataSize, 4))
-        output.write(pcmData)
-        
-        return output.toByteArray()
-    }
-    
-    /**
-     * Convert int to little-endian bytes
-     */
-    private fun intToBytes(value: Int, numBytes: Int): ByteArray {
-        val bytes = ByteArray(numBytes)
-        for (i in 0 until numBytes) {
-            bytes[i] = (value shr (8 * i) and 0xFF).toByte()
-        }
-        return bytes
     }
     
     /**
@@ -676,3 +636,52 @@ data class RecordingStatistics(
     val totalCount: Int,
     val totalDurationMs: Long
 )
+
+internal object RecordingQueryEscaper {
+    /** Escape LIKE wildcards ('%', '_') and the escape char ('\') in user input. */
+    fun escapeLikeQuery(query: String): String =
+        query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+}
+
+internal object WavEncoder {
+    fun pcmToWav(
+        pcmData: ByteArray,
+        sampleRate: Int = 16000,
+        channels: Int = 1,
+        bitsPerSample: Int = 16
+    ): ByteArray {
+        val byteRate = sampleRate * channels * bitsPerSample / 8
+        val blockAlign = channels * bitsPerSample / 8
+        val dataSize = pcmData.size
+        val totalSize = 36 + dataSize
+
+        val output = java.io.ByteArrayOutputStream()
+
+        output.write("RIFF".toByteArray())
+        output.write(intToBytes(totalSize, 4))
+        output.write("WAVE".toByteArray())
+
+        output.write("fmt ".toByteArray())
+        output.write(intToBytes(16, 4))
+        output.write(intToBytes(1, 2))
+        output.write(intToBytes(channels, 2))
+        output.write(intToBytes(sampleRate, 4))
+        output.write(intToBytes(byteRate, 4))
+        output.write(intToBytes(blockAlign, 2))
+        output.write(intToBytes(bitsPerSample, 2))
+
+        output.write("data".toByteArray())
+        output.write(intToBytes(dataSize, 4))
+        output.write(pcmData)
+
+        return output.toByteArray()
+    }
+
+    internal fun intToBytes(value: Int, numBytes: Int): ByteArray {
+        val bytes = ByteArray(numBytes)
+        for (i in 0 until numBytes) {
+            bytes[i] = (value shr (8 * i) and 0xFF).toByte()
+        }
+        return bytes
+    }
+}

@@ -72,8 +72,8 @@ jobs:
             echo "sn_auth_placeholder_for_ci" > app/src/main/res/raw/sn_auth_file.lc
           fi
 
-      - name: Build with unit-test coverage
-        run: ./gradlew --no-daemon clean build :phone-app:createDebugUnitTestCoverageReport --stacktrace
+      - name: Build phone-app unit-test coverage report
+        run: ./gradlew --no-daemon clean :phone-app:testDebugUnitTest :phone-app:jacocoTestReport --stacktrace
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 

@@ -1,6 +1,7 @@
 import java.util.Properties
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -127,6 +128,45 @@ tasks.withType<Test>().configureEach {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(layout.buildDirectory.file("reports/coverage/test/debug/report.xml"))
+        html.required.set(false)
+        csv.required.set(false)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*\$Lambda\$*.*",
+        "**/*\$inlined\$*.*",
+        "**/*ComposableSingletons\$*",
+        "**/*_Factory.*"
+    )
+    val buildDirFile = layout.buildDirectory.get().asFile
+
+    classDirectories.setFrom(
+        files(
+            fileTree("$buildDirFile/tmp/kotlin-classes/debug") { exclude(fileFilter) },
+            fileTree("$buildDirFile/intermediates/javac/debug/compileDebugJavaWithJavac/classes") {
+                exclude(fileFilter)
+            }
+        )
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(
+        fileTree(buildDirFile) {
+            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+            include("jacoco/testDebugUnitTest.exec")
+        }
+    )
 }
 
 dependencies {

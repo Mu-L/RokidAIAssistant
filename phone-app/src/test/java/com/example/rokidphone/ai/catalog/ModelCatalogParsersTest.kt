@@ -100,6 +100,25 @@ class ModelCatalogParsersTest {
         assertThat(chatModels.map { it.id }).containsExactly("gemini-3.6-flash")
     }
 
+    @Test
+    fun `Gemini models parsing trims descriptions and marks preview models`() {
+        val longDescription = "d".repeat(200)
+        val body = """
+            {"models": [
+              {
+                "name": "models/gemini-2.5-pro-preview",
+                "supportedGenerationMethods": ["generateContent"],
+                "description": "$longDescription"
+              }
+            ]}
+        """.trimIndent()
+
+        val model = ModelCatalogParsers.parse(AiProvider.GEMINI, CatalogFormat.GEMINI, body).single()
+
+        assertThat(model.status).isEqualTo(ModelStatus.PREVIEW)
+        assertThat(model.description).hasLength(160)
+    }
+
     // ==================== Anthropic ====================
 
     @Test
@@ -238,6 +257,12 @@ class ModelCatalogParsersTest {
         assertThat(model.capabilities.imageInput).isTrue()
         assertThat(model.capabilities.toolCalling).isTrue()
         assertThat(model.capabilities.maxContextTokens).isEqualTo(262144L)
+    }
+
+    @Test
+    fun `parse returns empty list for malformed payloads`() {
+        assertThat(ModelCatalogParsers.parse(AiProvider.OPENAI, CatalogFormat.OPENAI_STYLE, "<html>bad gateway"))
+            .isEmpty()
     }
 
     // ==================== Perplexity ====================

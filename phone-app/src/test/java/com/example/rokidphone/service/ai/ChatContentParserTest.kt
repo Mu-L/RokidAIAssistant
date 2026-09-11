@@ -62,4 +62,18 @@ class ChatContentParserTest {
         }
         assertThat(ChatContentParser.extractText(array)).isEqualTo("Part 1. Part 2.")
     }
+
+    @Test
+    fun `extractText - raw strings and objects without explicit type are preserved`() {
+        val array = JSONArray().apply {
+            put("prefix ")
+            put(JSONObject().apply { put("text", "body") })
+            put(JSONObject().apply {
+                put("type", "image")
+                put("text", "ignored")
+            })
+        }
+
+        assertThat(ChatContentParser.extractText(array)).isEqualTo("prefix body")
+    }
 }

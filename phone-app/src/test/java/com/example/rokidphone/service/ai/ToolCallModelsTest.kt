@@ -166,6 +166,21 @@ class ToolCallModelsTest {
     }
 
     @Test
+    fun `toResponseJson - success ignores conflicting status and error fields from tool data`() {
+        val data = JSONObject().apply {
+            put("status", "tool-value")
+            put("error", "tool-error")
+            put("message", "kept")
+        }
+
+        val json = ToolResult.success("id", data).toResponseJson()
+
+        assertThat(json.getString("status")).isEqualTo("success")
+        assertThat(json.has("error")).isFalse()
+        assertThat(json.getString("message")).isEqualTo("kept")
+    }
+
+    @Test
     fun `toResponseJson - failure status is error`() {
         val result = ToolResult.failure("id", "Permission denied")
         val json = result.toResponseJson()
