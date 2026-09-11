@@ -133,14 +133,20 @@ tasks.withType<Test>().configureEach {
 val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
 val debugUnitTestTaskProvider = tasks.named<Test>(debugUnitTestTaskName)
+val debugUnitTestEcFile =
+    layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
+val debugUnitTestExecFile =
+    layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
+val debugUnitTestJacocoExecFile = layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec")
+val debugUnitTestReportFile = layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
 
 debugUnitTestTaskProvider.configure {
     doFirst {
         project.delete(
-            layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
-            layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
-            layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
-            layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
+            debugUnitTestEcFile,
+            debugUnitTestExecFile,
+            debugUnitTestJacocoExecFile,
+            debugUnitTestReportFile
         )
     }
 }
@@ -150,7 +156,7 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
 
     reports {
         xml.required.set(true)
-        xml.outputLocation.set(layout.buildDirectory.file("reports/coverage/test/debug/report.xml"))
+        xml.outputLocation.set(debugUnitTestReportFile)
         html.required.set(false)
         csv.required.set(false)
     }
@@ -175,12 +181,9 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
     )
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     executionData.setFrom(
-        debugUnitTestTaskProvider,
-        fileTree(layout.buildDirectory) {
-            include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
-            include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
-            include("jacoco/$debugUnitTestTaskName.exec")
-        }
+        debugUnitTestEcFile,
+        debugUnitTestExecFile,
+        debugUnitTestJacocoExecFile
     )
 }
 
