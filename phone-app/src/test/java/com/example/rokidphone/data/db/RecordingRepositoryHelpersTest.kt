@@ -31,7 +31,7 @@ class RecordingRepositoryHelpersTest {
         assertThat(String(wav.copyOfRange(8, 12))).isEqualTo("WAVE")
         assertThat(String(wav.copyOfRange(12, 16))).isEqualTo("fmt ")
         assertThat(String(wav.copyOfRange(36, 40))).isEqualTo("data")
-        assertThat(wav.copyOfRange(40, wav.size).toList()).containsExactlyElementsIn(pcm.toList()).inOrder()
+        assertThat(wav.copyOfRange(44, wav.size).toList()).containsExactlyElementsIn(pcm.toList()).inOrder()
         assertThat(wav.size).isEqualTo(44 + pcm.size)
     }
 }

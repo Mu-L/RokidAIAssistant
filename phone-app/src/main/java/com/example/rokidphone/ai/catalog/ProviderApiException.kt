@@ -73,7 +73,9 @@ class ProviderApiException(
                         // JSON field rule: keep the field name, mask the value.
                         m.groupValues.size > 1 && m.value.startsWith("\"") ->
                             m.value.substringBeforeLast(m.groupValues[1]) + "***\""
-                        m.value.contains('=') -> m.value.substringBefore('=') + "=***"
+                        m.value.startsWith("key=", ignoreCase = true) ||
+                            m.value.startsWith("access_token=", ignoreCase = true) ->
+                            m.value.substringBefore('=') + "=***"
                         else -> "***"
                     }
                 }
