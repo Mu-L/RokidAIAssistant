@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -128,6 +129,18 @@ tasks.withType<Test>().configureEach {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+}
+
+val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
+    delete(
+        layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
+        layout.buildDirectory.file("jacoco/testDebugUnitTest.exec"),
+        layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
+    )
+}
+
+tasks.named("testDebugUnitTest") {
+    dependsOn(resetPhoneDebugCoverageArtifacts)
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
