@@ -166,19 +166,17 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
         "**/*ComposableSingletons\$*",
         "**/*_Factory.*"
     )
-    val buildDirFile = layout.buildDirectory.get().asFile
-
     classDirectories.setFrom(
         files(
-            fileTree("$buildDirFile/tmp/kotlin-classes/debug") { exclude(fileFilter) },
-            fileTree("$buildDirFile/intermediates/javac/debug/compileDebugJavaWithJavac/classes") {
+            fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(fileFilter) },
+            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
                 exclude(fileFilter)
             }
         )
     )
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     executionData.setFrom(
-        fileTree(buildDirFile) {
+        fileTree(layout.buildDirectory) {
             include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
             include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
             include("jacoco/$debugUnitTestTaskName.exec")
