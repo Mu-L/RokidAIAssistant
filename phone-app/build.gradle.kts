@@ -129,19 +129,28 @@ tasks.withType<Test>().configureEach {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
-    dependsOn("resetPhoneDebugCoverageArtifacts")
 }
+
+val debugUnitTestTaskName = "testDebugUnitTest"
+val debugUnitTestCoverageDir = "debugUnitTest"
 
 val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
     delete(
-        layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
-        layout.buildDirectory.file("jacoco/testDebugUnitTest.exec"),
+        layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
+        layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
+        layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
         layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
     )
 }
 
+tasks.withType<Test>().configureEach {
+    if (name == debugUnitTestTaskName) {
+        dependsOn(resetPhoneDebugCoverageArtifacts)
+    }
+}
+
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(tasks.withType<Test>())
+    dependsOn(tasks.withType<Test>().matching { it.name == debugUnitTestTaskName })
 
     reports {
         xml.required.set(true)
@@ -173,9 +182,9 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     executionData.setFrom(
         fileTree(buildDirFile) {
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.ec")
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-            include("jacoco/testDebugUnitTest.exec")
+            include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
+            include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
+            include("jacoco/$debugUnitTestTaskName.exec")
         }
     )
 }
