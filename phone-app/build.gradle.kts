@@ -129,6 +129,7 @@ tasks.withType<Test>().configureEach {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+    dependsOn("resetPhoneDebugCoverageArtifacts")
 }
 
 val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
@@ -137,10 +138,6 @@ val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCo
         layout.buildDirectory.file("jacoco/testDebugUnitTest.exec"),
         layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
     )
-}
-
-tasks.named("testDebugUnitTest") {
-    dependsOn(resetPhoneDebugCoverageArtifacts)
 }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
