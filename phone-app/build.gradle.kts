@@ -144,9 +144,10 @@ val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCo
     )
 }
 
-debugUnitTestTasks.configureEach { dependsOn(resetPhoneDebugCoverageArtifacts) }
+debugUnitTestTasks.configureEach { mustRunAfter(resetPhoneDebugCoverageArtifacts) }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
+    dependsOn(resetPhoneDebugCoverageArtifacts)
     dependsOn(debugUnitTestTasks)
 
     reports {
