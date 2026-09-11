@@ -135,6 +135,7 @@ val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
 
 val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
+    onlyIf { gradle.taskGraph.hasTask(":phone-app:jacocoTestReport") }
     delete(
         layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
         layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
@@ -145,12 +146,11 @@ val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCo
 
 tasks.configureEach {
     if (name == debugUnitTestTaskName) {
-        mustRunAfter(resetPhoneDebugCoverageArtifacts)
+        dependsOn(resetPhoneDebugCoverageArtifacts)
     }
 }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(resetPhoneDebugCoverageArtifacts)
     dependsOn(debugUnitTestTaskName)
 
     reports {
