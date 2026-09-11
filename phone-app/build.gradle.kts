@@ -184,7 +184,7 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
     )
 }
 
-tasks.register<JacocoReport>("jacocoTestReport") {
+tasks.register<JacocoReport>("phoneAppJacocoTestReport") {
     configurePhoneAppJacocoReport()
 }
 

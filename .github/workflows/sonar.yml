@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Build phone-app unit-test coverage report
-        run: ./gradlew --no-daemon :phone-app:jacocoTestReport --stacktrace
+        run: ./gradlew --no-daemon :phone-app:phoneAppJacocoTestReport --stacktrace
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
