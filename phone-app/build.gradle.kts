@@ -1,7 +1,6 @@
 import java.util.Properties
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
-import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -128,67 +127,6 @@ tasks.withType<Test>().configureEach {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
-}
-
-val debugUnitTestTaskName = "testDebugUnitTest"
-val debugUnitTestCoverageDir = "debugUnitTest"
-val debugUnitTestTaskProvider = tasks.named<Test>(debugUnitTestTaskName)
-val debugUnitTestEcFile =
-    layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
-val debugUnitTestExecFile =
-    layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
-val debugUnitTestJacocoExecFile = layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec")
-val debugUnitTestReportFile = layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
-
-debugUnitTestTaskProvider.configure {
-    doFirst {
-        project.delete(
-            debugUnitTestEcFile,
-            debugUnitTestExecFile,
-            debugUnitTestJacocoExecFile,
-            debugUnitTestReportFile
-        )
-    }
-}
-
-fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(debugUnitTestTaskProvider)
-
-    reports {
-        xml.required.set(true)
-        xml.outputLocation.set(debugUnitTestReportFile)
-        html.required.set(false)
-        csv.required.set(false)
-    }
-
-    val fileFilter = listOf(
-        "**/R.class",
-        "**/R\$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*\$Lambda\$*.*",
-        "**/*\$inlined\$*.*",
-        "**/*ComposableSingletons\$*",
-        "**/*_Factory.*"
-    )
-    classDirectories.setFrom(
-        files(
-            fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(fileFilter) },
-            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
-                exclude(fileFilter)
-            }
-        )
-    )
-    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
-    executionData.setFrom(
-        debugUnitTestEcFile,
-        debugUnitTestExecFile,
-        debugUnitTestJacocoExecFile
-    )
-}
-
-tasks.register<JacocoReport>("phoneAppJacocoTestReport") {
-    configurePhoneAppJacocoReport()
 }
 
 dependencies {

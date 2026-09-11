@@ -53,8 +53,8 @@ class ProviderApiException(
             Regex("AIza[0-9A-Za-z_\\-]+"),
             // JWTs (header.payload.signature)
             Regex("eyJ[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]*"),
-            Regex("key=[A-Za-z0-9._\\-]+"),
-            Regex("access" + "_token" + "=[A-Za-z0-9._\\-]+"),
+            // Match query credential names; this is a redaction pattern, not a credential.
+            Regex("(?:key|access_token)=[A-Za-z0-9._\\-]+"),
             // Generic JSON credential fields: "api_key"/"secret"/"password"/...: "..."
             Regex(
                 "\\\"(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|password)\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"",

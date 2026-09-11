@@ -6,22 +6,24 @@
 
 ---
 
+共用 Android 裝置前，請閱讀 [CI 品質檢查與裝置使用指南](../CI_AND_DEVICES.md)。
+
 ## 🚀 快速開始（5 分鐘）
 
 ```bash
 # 1. 複製專案
-git clone https://github.com/your-repo/RokidAIAssistant.git && cd RokidAIAssistant
+git clone https://github.com/zero2005x/RokidAIAssistant.git && cd RokidAIAssistant
 
 # 2. 設定 API 金鑰
 cp local.properties.template local.properties
-# 編輯 local.properties → 新增 GEMINI_API_KEY（必要）
+# 金鑰可稍後在 App 設定中輸入；安裝與開啟設定不需要 AI 金鑰。
 
 # 3. 建置與安裝
-./gradlew :phone-app:installDebug    # 安裝手機應用
-./gradlew :glasses-app:installDebug  # 安裝眼鏡應用（在 Rokid 裝置上）
+ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug    # 安裝手機應用
+ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug  # 安裝眼鏡應用（在 Rokid 裝置上）
 ```
 
-> **最低需求**：只需要 `GEMINI_API_KEY` 即可執行。前往 [Google AI Studio](https://ai.google.dev/) 取得。
+> 安裝及開啟設定不需要 AI 金鑰；使用 AI 時只需設定選用服務商的金鑰。眼鏡配對另需 Rokid 憑證。
 
 ---
 
@@ -172,8 +174,8 @@ ANTHROPIC_API_KEY=your_anthropic_key
 ./gradlew :glasses-app:assembleDebug
 
 # 安裝到連接的裝置
-./gradlew :phone-app:installDebug
-./gradlew :glasses-app:installDebug
+ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug
+ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug
 
 # 建置 release APK
 ./gradlew assembleRelease

@@ -13,15 +13,15 @@
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-repo/RokidAIAssistant.git && cd RokidAIAssistant
+git clone https://github.com/zero2005x/RokidAIAssistant.git && cd RokidAIAssistant
 
 # 2. (Optional) Configure API keys
 cp local.properties.template local.properties
 # Add any provider key — or skip this and enter keys later in the app's Settings screen.
 
 # 3. Build & Install
-./gradlew :phone-app:installDebug    # Install phone app
-./gradlew :glasses-app:installDebug  # Install glasses app (on Rokid device)
+ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug    # Install phone app
+ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug  # Install glasses app (on Rokid device)
 ```
 
 > **No AI key is required** to install the app or open Settings. Only the one
@@ -182,8 +182,8 @@ ROKID_CLIENT_SECRET=your_rokid_secret_without_hyphens
 ./gradlew :glasses-app:assembleDebug
 
 # Install to connected device
-./gradlew :phone-app:installDebug
-./gradlew :glasses-app:installDebug
+ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug
+ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug
 
 # Build release APK
 ./gradlew assembleRelease
@@ -221,6 +221,9 @@ glasses-app/build/outputs/apk/release/glasses-app-release.apk
 ---
 
 ## Testing
+
+See [CI quality checks and shared devices](doc/CI_AND_DEVICES.md) for Sonar verification
+and explicit device selection when other projects share ADB devices.
 
 Unit and integration test suites are implemented for protocol, service, factory, and data-layer paths.
 

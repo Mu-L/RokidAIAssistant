@@ -42,12 +42,13 @@ sonar {
             "**/*Binding.kt",
             "**/*BR.java",
             "**/*_Factory.java",
-            "**/*_MembersInjector.java"
+            "**/*_MembersInjector.java",
+            "**/ui/**"
         ).joinToString(","))
 
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
-            "phone-app/build/reports/coverage/test/debug/report.xml"
+            file("phone-app/build/reports/coverage/test/debug/report.xml").absolutePath
         )
     }
 }
