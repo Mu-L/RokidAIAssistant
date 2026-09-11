@@ -19,8 +19,8 @@ cp local.properties.template local.properties
 # 金鑰可稍後在 App 設定中輸入；安裝與開啟設定不需要 AI 金鑰。
 
 # 3. 建置與安裝
-ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug    # 安裝手機應用
-ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug  # 安裝眼鏡應用（在 Rokid 裝置上）
+ANDROID_SERIAL=PHONE_SERIAL ./gradlew :phone-app:installDebug    # 安裝手機應用
+ANDROID_SERIAL=GLASSES_SERIAL ./gradlew :glasses-app:installDebug  # 安裝眼鏡應用（在 Rokid 裝置上）
 ```
 
 > 安裝及開啟設定不需要 AI 金鑰；使用 AI 時只需設定選用服務商的金鑰。眼鏡配對另需 Rokid 憑證。
@@ -174,8 +174,8 @@ ANTHROPIC_API_KEY=your_anthropic_key
 ./gradlew :glasses-app:assembleDebug
 
 # 安裝到連接的裝置
-ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug
-ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug
+ANDROID_SERIAL=PHONE_SERIAL ./gradlew :phone-app:installDebug
+ANDROID_SERIAL=GLASSES_SERIAL ./gradlew :glasses-app:installDebug
 
 # 建置 release APK
 ./gradlew assembleRelease

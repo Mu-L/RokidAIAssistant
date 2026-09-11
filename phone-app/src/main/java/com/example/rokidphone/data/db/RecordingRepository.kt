@@ -306,10 +306,7 @@ class RecordingRepository private constructor(
                     try {
                         recordingDao.insert(recording)
                     } catch (e: Exception) {
-                        val incompleteFile = File(recording.filePath)
-                        if (incompleteFile.exists() && !incompleteFile.delete()) {
-                            Log.w(TAG, "Failed to delete incomplete recording: ${incompleteFile.absolutePath}")
-                        }
+                        deleteIncompleteRecording(File(recording.filePath))
                         throw e
                     }
                     Log.d(TAG, "Phone recording saved: ${recording.id}")
@@ -414,6 +411,12 @@ class RecordingRepository private constructor(
             recorder?.release()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to release MediaRecorder", e)
+        }
+    }
+
+    private fun deleteIncompleteRecording(file: File?) {
+        if (file != null && file.exists() && !file.delete()) {
+            Log.w(TAG, "Failed to delete incomplete recording: ${file.absolutePath}")
         }
     }
 
@@ -529,18 +532,10 @@ class RecordingRepository private constructor(
             
             recording
         } catch (e: CancellationException) {
-            outputFile?.let { file ->
-                if (file.exists() && !file.delete()) {
-                    Log.w(TAG, "Failed to delete incomplete glasses recording: ${file.absolutePath}")
-                }
-            }
+            deleteIncompleteRecording(outputFile)
             throw e
         } catch (e: Exception) {
-            outputFile?.let { file ->
-                if (file.exists() && !file.delete()) {
-                    Log.w(TAG, "Failed to delete incomplete glasses recording: ${file.absolutePath}")
-                }
-            }
+            deleteIncompleteRecording(outputFile)
             Log.e(TAG, "Failed to save glasses recording", e)
             null
         }

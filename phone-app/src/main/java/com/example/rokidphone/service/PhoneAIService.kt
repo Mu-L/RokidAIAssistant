@@ -1747,7 +1747,7 @@ class TextToSpeechService(private val context: android.content.Context) {
 
     // ── Audio playback ───────────────────────────────────
 
-    private suspend fun playAudioData(audioData: ByteArray) {
+    internal suspend fun playAudioData(audioData: ByteArray) {
         try {
             // Blocking disk I/O must not run on the main thread
             val tempFile = withContext(Dispatchers.IO) {

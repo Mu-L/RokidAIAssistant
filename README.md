@@ -20,8 +20,8 @@ cp local.properties.template local.properties
 # Add any provider key — or skip this and enter keys later in the app's Settings screen.
 
 # 3. Build & Install
-ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug    # Install phone app
-ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug  # Install glasses app (on Rokid device)
+ANDROID_SERIAL=PHONE_SERIAL ./gradlew :phone-app:installDebug    # Install phone app
+ANDROID_SERIAL=GLASSES_SERIAL ./gradlew :glasses-app:installDebug  # Install glasses app (on Rokid device)
 ```
 
 > **No AI key is required** to install the app or open Settings. Only the one
@@ -182,8 +182,8 @@ ROKID_CLIENT_SECRET=your_rokid_secret_without_hyphens
 ./gradlew :glasses-app:assembleDebug
 
 # Install to connected device
-ANDROID_SERIAL=<phone-serial> ./gradlew :phone-app:installDebug
-ANDROID_SERIAL=<glasses-serial> ./gradlew :glasses-app:installDebug
+ANDROID_SERIAL=PHONE_SERIAL ./gradlew :phone-app:installDebug
+ANDROID_SERIAL=GLASSES_SERIAL ./gradlew :glasses-app:installDebug
 
 # Build release APK
 ./gradlew assembleRelease

@@ -5,13 +5,13 @@
 Use JDK 21 and Android SDK 36. No Android device or AI provider key is needed:
 
 ```powershell
-.\gradlew.bat --no-daemon build :phone-app:createDebugUnitTestCoverageReport
+.\gradlew.bat --no-daemon build testCoverage
 ```
 
 `build` compiles, runs unit tests, and runs lint across all four modules. The Android
-Gradle plugin generates the phone report at
-`phone-app/build/reports/coverage/test/debug/report.xml`. Sonar receives its
-absolute path so the same report can be resolved from every Gradle subproject.
+Gradle plugin generates one report per module, including
+`phone-app/build/reports/coverage/test/debug/report.xml`. Sonar receives the
+absolute paths for all four reports so they resolve from every Gradle subproject.
 Do not register a replacement task by looking up `testDebugUnitTest` during
 initial configuration: Android registers its variant tasks later.
 
