@@ -143,7 +143,7 @@ tasks.named("testDebugUnitTest") {
     dependsOn(resetPhoneDebugCoverageArtifacts)
 }
 
-tasks.register<JacocoReport>("jacocoTestReport") {
+fun JacocoReport.configurePhoneAppJacocoReport() {
     dependsOn("testDebugUnitTest")
 
     reports {
@@ -180,6 +180,17 @@ tasks.register<JacocoReport>("jacocoTestReport") {
             include("jacoco/testDebugUnitTest.exec")
         }
     )
+}
+
+val jacocoReportTaskName = "jacocoTestReport"
+if (tasks.findByName(jacocoReportTaskName) != null) {
+    tasks.named<JacocoReport>(jacocoReportTaskName) {
+        configurePhoneAppJacocoReport()
+    }
+} else {
+    tasks.register<JacocoReport>(jacocoReportTaskName) {
+        configurePhoneAppJacocoReport()
+    }
 }
 
 dependencies {
