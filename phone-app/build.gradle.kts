@@ -141,7 +141,7 @@ val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCo
 }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn("testDebugUnitTest")
+    dependsOn(tasks.withType<Test>())
 
     reports {
         xml.required.set(true)
@@ -173,6 +173,7 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     executionData.setFrom(
         fileTree(buildDirFile) {
+            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.ec")
             include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
             include("jacoco/testDebugUnitTest.exec")
         }
