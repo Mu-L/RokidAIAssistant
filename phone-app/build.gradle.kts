@@ -1,5 +1,4 @@
 import java.util.Properties
-import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -134,19 +133,16 @@ tasks.withType<Test>().configureEach {
 val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
 
-val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
-    onlyIf { gradle.taskGraph.hasTask(":phone-app:jacocoTestReport") }
-    delete(
-        layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
-        layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
-        layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
-        layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
-    )
-}
-
 tasks.configureEach {
     if (name == debugUnitTestTaskName) {
-        dependsOn(resetPhoneDebugCoverageArtifacts)
+        doFirst {
+            project.delete(
+                layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
+                layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
+                layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
+                layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
+            )
+        }
     }
 }
 
