@@ -132,22 +132,21 @@ tasks.withType<Test>().configureEach {
 
 val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
+val debugUnitTestTasks = tasks.withType<Test>().matching { it.name == debugUnitTestTaskName }
 
-tasks.configureEach {
-    if (name == debugUnitTestTaskName) {
-        doFirst {
-            project.delete(
-                layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
-                layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
-                layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
-                layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
-            )
-        }
+debugUnitTestTasks.configureEach {
+    doFirst {
+        project.delete(
+            layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
+            layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec"),
+            layout.buildDirectory.file("jacoco/$debugUnitTestTaskName.exec"),
+            layout.buildDirectory.file("reports/coverage/test/debug/report.xml")
+        )
     }
 }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(debugUnitTestTaskName)
+    dependsOn(debugUnitTestTasks)
 
     reports {
         xml.required.set(true)
