@@ -132,9 +132,9 @@ tasks.withType<Test>().configureEach {
 
 val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
-val debugUnitTestTasks = tasks.withType<Test>().matching { it.name == debugUnitTestTaskName }
+val debugUnitTestTaskProvider = tasks.named<Test>(debugUnitTestTaskName)
 
-debugUnitTestTasks.configureEach {
+debugUnitTestTaskProvider.configure {
     doFirst {
         project.delete(
             layout.buildDirectory.file("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec"),
@@ -146,7 +146,7 @@ debugUnitTestTasks.configureEach {
 }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(debugUnitTestTasks)
+    dependsOn(debugUnitTestTaskProvider)
 
     reports {
         xml.required.set(true)
@@ -175,6 +175,7 @@ fun JacocoReport.configurePhoneAppJacocoReport() {
     )
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     executionData.setFrom(
+        debugUnitTestTaskProvider,
         fileTree(layout.buildDirectory) {
             include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.ec")
             include("outputs/unit_test_code_coverage/$debugUnitTestCoverageDir/$debugUnitTestTaskName.exec")
