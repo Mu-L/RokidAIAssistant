@@ -133,6 +133,7 @@ tasks.withType<Test>().configureEach {
 
 val debugUnitTestTaskName = "testDebugUnitTest"
 val debugUnitTestCoverageDir = "debugUnitTest"
+val debugUnitTestTasks = tasks.matching { it.name == debugUnitTestTaskName }
 
 val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCoverageArtifacts") {
     delete(
@@ -143,14 +144,10 @@ val resetPhoneDebugCoverageArtifacts = tasks.register<Delete>("resetPhoneDebugCo
     )
 }
 
-tasks.withType<Test>().configureEach {
-    if (name == debugUnitTestTaskName) {
-        dependsOn(resetPhoneDebugCoverageArtifacts)
-    }
-}
+debugUnitTestTasks.configureEach { dependsOn(resetPhoneDebugCoverageArtifacts) }
 
 fun JacocoReport.configurePhoneAppJacocoReport() {
-    dependsOn(tasks.withType<Test>().matching { it.name == debugUnitTestTaskName })
+    dependsOn(debugUnitTestTasks)
 
     reports {
         xml.required.set(true)
