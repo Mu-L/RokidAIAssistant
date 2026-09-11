@@ -441,7 +441,9 @@ private fun playTestAudio(context: android.content.Context, audioData: ByteArray
         )
         setOnCompletionListener { mp ->
             mp.release()
-            tempFile.delete()
+            if (!tempFile.delete()) {
+                android.util.Log.w("TtsSettings", "Failed to delete temporary TTS test audio")
+            }
         }
         prepare()
         start()

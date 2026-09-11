@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -72,14 +73,38 @@ jobs:
             echo "sn_auth_placeholder_for_ci" > app/src/main/res/raw/sn_auth_file.lc
           fi
 
-      - name: Build with unit-test coverage
-        run: ./gradlew --no-daemon clean build :phone-app:createDebugUnitTestCoverageReport --stacktrace
+      - name: Build and test all modules with coverage
+        run: ./gradlew --no-daemon build testCoverage --stacktrace
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
+      - name: Verify coverage reports contain executed source lines
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+          for module in ("app", "common", "glasses-app", "phone-app"):
+              path = pathlib.Path(module) / "build/reports/coverage/test/debug/report.xml"
+              report = ET.parse(path).getroot()
+              covered = sum(int(line.get("ci", "0")) > 0
+                            for line in report.findall("./package/sourcefile/line"))
+              if covered == 0:
+                  raise SystemExit(f"{path}: no executed source lines in coverage report")
+              print(f"{module}: {covered} covered source lines")
+          PY
       - name: SonarCloud analysis
         if: env.SONAR_TOKEN != ''
-        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --no-daemon sonar --info
+        run: ./gradlew --no-daemon sonar -Dsonar.qualitygate.wait=true --info
+
+      - name: Upload test, lint, and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-reports
+          path: |
+            **/build/reports/tests/
+            **/build/reports/lint-results-*.html
+            **/build/reports/coverage/
+          retention-days: 7

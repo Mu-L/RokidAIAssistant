@@ -37,14 +37,29 @@ sonar {
             "**/R.java",
             "**/R\$*.java",
             "**/BuildConfig.java",
+            "**/Manifest*.java",
             "**/*Binding.java",
             "**/*Binding.kt",
+            "**/*BR.java",
+            "**/*_Factory.java",
+            "**/*_MembersInjector.java",
             "**/ui/**"
         ).joinToString(","))
 
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
-            "phone-app/build/reports/coverage/test/debug/report.xml"
+            listOf("app", "common", "glasses-app", "phone-app").joinToString(",") {
+                file("$it/build/reports/coverage/test/debug/report.xml").absolutePath
+            }
         )
     }
+}
+
+// Let Android register variant tasks before Gradle resolves these dependencies.
+tasks.register("testCoverage") {
+    group = "verification"
+    description = "Run debug unit tests and generate coverage for every Android module."
+    dependsOn(listOf("app", "common", "glasses-app", "phone-app").map {
+        ":$it:createDebugUnitTestCoverageReport"
+    })
 }

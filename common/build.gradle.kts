@@ -1,8 +1,11 @@
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 
 plugins {
+    jacoco
 
 
     alias(libs.plugins.android.library)
@@ -21,6 +24,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -63,4 +70,11 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
     testImplementation("com.google.truth:truth:1.4.4")
     testImplementation("org.robolectric:robolectric:4.14.1")
+}
+
+tasks.withType<Test>().configureEach {
+    extensions.configure(JacocoTaskExtension::class.java) {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
 }

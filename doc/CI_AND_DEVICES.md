@@ -1,0 +1,79 @@
+# CI quality checks and shared Android devices
+
+## Reproduce GitHub verification
+
+Use JDK 21 and Android SDK 36. No Android device or AI provider key is needed:
+
+```powershell
+.\gradlew.bat --no-daemon build testCoverage
+```
+
+`build` compiles, runs unit tests, and runs lint across all four modules. The Android
+Gradle plugin generates one report per module, including
+`phone-app/build/reports/coverage/test/debug/report.xml`. Sonar receives the
+absolute paths for all four reports so they resolve from every Gradle subproject.
+Do not register a replacement task by looking up `testDebugUnitTest` during
+initial configuration: Android registers its variant tasks later.
+
+With `SONAR_TOKEN` supplied through the environment:
+
+```powershell
+.\gradlew.bat --no-daemon sonar '-Dsonar.qualitygate.wait=true'
+```
+
+The workflow waits for Sonar's quality gate and propagates a failed gate to GitHub
+Actions. Build, lint, test, and coverage reports are uploaded even when a check
+fails. Pull requests without access to `SONAR_TOKEN` still run the build/tests,
+but cannot perform authenticated Sonar analysis. Generated source exclusions and
+the existing Compose UI coverage exclusion are retained; provider/service logic
+remains in scope. The configured new-code baseline and 80% threshold are unchanged.
+
+## Windows Java loopback startup failure
+
+If Gradle fails before configuration with `Unable to establish loopback connection`
+and `UnixDomainSockets.connect0`, use a short, writable directory outside the
+Windows app's virtualized temporary directory for this shell only:
+
+```powershell
+$rokidTemp = Join-Path $env:USERPROFILE '.gradle/rokid-tmp'
+New-Item -ItemType Directory -Force -Path $rokidTemp | Out-Null
+$env:JAVA_TOOL_OPTIONS = "-Djdk.net.unixdomain.tmpdir=$rokidTemp -Djava.io.tmpdir=$rokidTemp"
+```
+
+Select a local JDK 21 using `JAVA_HOME`; do not commit a machine-specific JDK path.
+
+## Shared devices / 共用 Android 裝置
+
+Builds and JVM unit tests do not need ADB. While another project owns a device,
+finish these checks first. Before any install, launch, or instrumentation run,
+coordinate availability with that project's operator. A serial selector prevents
+wrong-device access; it is not an exclusive device lock.
+
+Observed on 2026-09-11 (verify again with `adb devices -l` before use):
+
+| Serial | Model | Role |
+| --- | --- | --- |
+| `1901092544022855` | `RG_glasses` | Rokid glasses / 眼鏡 |
+| `eeaas88ts4kn6l8t` | `21091116UG` | Xiaomi phone / 手機 |
+
+Once the device is available, explicitly select it for every operation:
+
+```powershell
+# Install only the intended APK; do not run an unqualified installDebug.
+adb -s eeaas88ts4kn6l8t install -r phone-app/build/outputs/apk/debug/phone-app-debug.apk
+adb -s 1901092544022855 install -r glasses-app/build/outputs/apk/debug/glasses-app-debug.apk
+
+# Gradle instrumentation: restrict this invocation, then restore the caller's selector.
+$previousSerial = $env:ANDROID_SERIAL
+try {
+    $env:ANDROID_SERIAL = 'eeaas88ts4kn6l8t'
+    .\gradlew.bat :phone-app:connectedDebugAndroidTest
+} finally {
+    $env:ANDROID_SERIAL = $previousSerial
+}
+```
+
+Do not use `adb kill-server`, reboot devices, clear global logcat, or stop/uninstall
+another project's application to free a device. 本專案與其他專案共用裝置時，先完成不需
+裝置的建置及單元測試；取得使用時段後，每次 ADB 操作均加上 `-s`，Gradle 實機測試則
+設定 `ANDROID_SERIAL`。指定序號無法防止兩個專案同時操作同一台裝置，仍須協調時段。

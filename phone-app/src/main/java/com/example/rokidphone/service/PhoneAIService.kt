@@ -1747,7 +1747,7 @@ class TextToSpeechService(private val context: android.content.Context) {
 
     // ── Audio playback ───────────────────────────────────
 
-    private suspend fun playAudioData(audioData: ByteArray) {
+    internal suspend fun playAudioData(audioData: ByteArray) {
         try {
             // Blocking disk I/O must not run on the main thread
             val tempFile = withContext(Dispatchers.IO) {
@@ -1764,8 +1764,19 @@ class TextToSpeechService(private val context: android.content.Context) {
                             .setUsage(android.media.AudioAttributes.USAGE_ASSISTANT)
                             .build()
                     )
-                    setOnCompletionListener { mp -> mp.release(); tempFile.delete() }
-                    setOnErrorListener { mp, _, _ -> mp.release(); tempFile.delete(); true }
+                    setOnCompletionListener { mp ->
+                        mp.release()
+                        if (!tempFile.delete()) {
+                            android.util.Log.w(TAG, "Failed to delete temporary TTS audio")
+                        }
+                    }
+                    setOnErrorListener { mp, _, _ ->
+                        mp.release()
+                        if (!tempFile.delete()) {
+                            android.util.Log.w(TAG, "Failed to delete temporary TTS audio after playback error")
+                        }
+                        true
+                    }
                     prepare()
                     start()
                 }
