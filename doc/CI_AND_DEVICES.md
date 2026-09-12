@@ -52,6 +52,17 @@ the client's own frame parsing. Stubbing a `Result` function is fine when the ca
 site passes every argument, so `RecordingRepository.stopRecording()` and
 `EnhancedAIService.quickChat(message)` are mocked directly.
 
+### Observing a replay-less SharedFlow
+
+`ServiceBridge`, `BluetoothPhotoReceiver` and `PhotoRepository` publish through
+`MutableSharedFlow(replay = 0)`, so an emission with no subscriber attached is lost.
+Subscribe with `async(start = CoroutineStart.UNDISPATCHED) { flow.first() }` before
+triggering the emission, and await the value.
+
+Do not subscribe from `backgroundScope`: `advanceUntilIdle()` does not run background
+coroutines — that is what keeps them from holding a test open — so the collector never
+gets to register and the assertion sees nothing, with no hint as to why.
+
 ### Substituting dispatchers and scopes
 
 `TextToSpeechService` and `LiveAudioManager` expose their `CoroutineScope` and
