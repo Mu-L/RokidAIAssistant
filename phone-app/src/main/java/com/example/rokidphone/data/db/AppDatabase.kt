@@ -197,7 +197,9 @@ interface ConversationDao {
     fun getConversationByIdFlow(id: String): Flow<ConversationEntity?>
     
     // Caller must escape '%', '_' and '\' in `query` before calling.
-    @Query("SELECT * FROM conversations WHERE title LIKE '%' || :query || '%' ESCAPE '\' ORDER BY updated_at DESC")
+    // The escape character must be written as "\\": in a Kotlin string "\'" is just an
+    // apostrophe, which would emit `ESCAPE ''` and make SQLite reject every search.
+    @Query("SELECT * FROM conversations WHERE title LIKE '%' || :query || '%' ESCAPE '\\' ORDER BY updated_at DESC")
     fun searchConversations(query: String): Flow<List<ConversationEntity>>
     
     @Upsert

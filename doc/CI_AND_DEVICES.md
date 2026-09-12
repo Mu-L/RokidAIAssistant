@@ -28,6 +28,38 @@ but cannot perform authenticated Sonar analysis. Generated source exclusions and
 the existing Compose UI coverage exclusion are retained; provider/service logic
 remains in scope. The configured new-code baseline and 80% threshold are unchanged.
 
+## Unit test patterns
+
+Run a single class while iterating:
+
+```powershell
+.\gradlew.bat --no-daemon :phone-app:testDebugUnitTest --tests 'com.example.rokidphone.service.SystemTextToSpeechTest'
+```
+
+### Do not mock a `Result`-returning function that has default arguments
+
+Kotlin compiles a call that omits a default argument into the synthetic static
+`fn$default` bridge. MockK intercepts the instance method, not the bridge, and the
+bridge boxes the returned value class a second time. For a function returning
+`Result<T>` the caller then sees `Result(Result(value))`: `onSuccess` hands back a
+`Result` where a `T` is expected, the cast fails, and the production fallback path
+runs instead of the one under test — with no mock failure to point at it.
+
+`EdgeTtsClient.synthesize(text, voice, rate, pitch, volume = "+0%")` is such a
+function. Drive it through its injected `WebSocket.Factory` instead of stubbing it
+(`EdgeTtsClientTest`, `SystemTextToSpeechTest`); the fake transport also exercises
+the client's own frame parsing. Stubbing a `Result` function is fine when the call
+site passes every argument, so `RecordingRepository.stopRecording()` and
+`EnhancedAIService.quickChat(message)` are mocked directly.
+
+### Substituting dispatchers and scopes
+
+`TextToSpeechService` and `LiveAudioManager` expose their `CoroutineScope` and
+main-thread dispatcher as fields so tests can inject a `TestScope` and
+`Dispatchers.Unconfined` by reflection. ViewModels use `Dispatchers.setMain` with a
+`StandardTestDispatcher`. Nothing in the unit test suite touches a real device, a
+real socket, or an AI provider.
+
 ## Windows Java loopback startup failure
 
 If Gradle fails before configuration with `Unable to establish loopback connection`
