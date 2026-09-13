@@ -135,12 +135,10 @@ class ConversationRepositoryTest {
         assertThat(assistant.modelId).isEqualTo("gpt-4")
         assertThat(assistant.hasImage).isFalse()
 
-        // Both messages are stored, but the order is deliberately not asserted: the
-        // DAO orders by "created_at ASC, id ASC" and these two are written in the
-        // same millisecond, so the tie is broken by a random UUID rather than by
-        // insertion order. See the note on getMessagesForConversation.
+        // Insertion order holds even though both messages are written in the same
+        // millisecond: ordering comes from the per-conversation seq, not created_at.
         assertThat(repository.getMessagesForConversation(conversation.id).first().map { it.id })
-            .containsExactly(user.id, assistant.id)
+            .containsExactly(user.id, assistant.id).inOrder()
         assertThat(repository.getMessagesForConversationSync(conversation.id)).hasSize(2)
         assertThat(repository.getMessageCount(conversation.id)).isEqualTo(2)
         assertThat(repository.getTotalTokenCount(conversation.id)).isEqualTo(12)
@@ -152,17 +150,14 @@ class ConversationRepositoryTest {
         val conversation = newConversation()
         repeat(5) { repository.addUserMessage(conversation.id, "message $it") }
 
-        val pages = (0..2).map { page ->
-            repository.getMessagesPaged(conversation.id, page = page, pageSize = 2)
-                .map { it.content }
-        }
-
-        // Which message lands on which page is not asserted: all five are written in
-        // the same millisecond and the DAO breaks that tie on a random UUID. What
-        // paging must guarantee is that it partitions the history exactly once.
-        assertThat(pages.map { it.size }).containsExactly(2, 2, 1).inOrder()
-        assertThat(pages.flatten())
-            .containsExactlyElementsIn((0 until 5).map { "message $it" })
+        // All five are written in the same millisecond, so this also pins down that
+        // paging walks them in insertion order rather than an arbitrary one.
+        assertThat(repository.getMessagesPaged(conversation.id, page = 0, pageSize = 2)
+            .map { it.content }).containsExactly("message 0", "message 1").inOrder()
+        assertThat(repository.getMessagesPaged(conversation.id, page = 1, pageSize = 2)
+            .map { it.content }).containsExactly("message 2", "message 3").inOrder()
+        assertThat(repository.getMessagesPaged(conversation.id, page = 2, pageSize = 2)
+            .map { it.content }).containsExactly("message 4")
         assertThat(repository.getMessagesPaged(conversation.id, page = 9, pageSize = 2)).isEmpty()
     }
 
