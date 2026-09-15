@@ -195,6 +195,18 @@ class SettingsRepository(private val context: Context) {
     /**
      * Load settings
      */
+    /**
+     * Reads a string setting, falling back to [default] when it is absent.
+     *
+     * SharedPreferences.getString is declared nullable, so every call site would
+     * otherwise need its own elvis repeating the default. Thirty-odd copies of that
+     * is noise, and each one adds a null branch that cannot be taken: getString only
+     * returns null when the default itself is null. Keeping the fallback here means
+     * one branch to reason about instead of one per setting.
+     */
+    private fun SharedPreferences.string(key: String, default: String = ""): String =
+        getString(key, default) ?: default
+
     private fun loadSettings(): ApiSettings {
         // Get saved system prompt or use current locale's default
         val savedSystemPrompt = prefs.getString(KEY_SYSTEM_PROMPT, null)
@@ -269,45 +281,42 @@ class SettingsRepository(private val context: Context) {
             sttProvider = SttProvider.fromNameOrNull(
                 prefs.getString(KEY_STT_PROVIDER, SttProvider.GEMINI.name) ?: SttProvider.GEMINI.name
             ) ?: SttProvider.GEMINI,
-            deepgramApiKey = prefs.getString(KEY_STT_DEEPGRAM_API_KEY, "") ?: "",
-            assemblyaiApiKey = prefs.getString(KEY_STT_ASSEMBLYAI_API_KEY, "") ?: "",
-            gcpProjectId = prefs.getString(KEY_STT_GCP_PROJECT_ID, "") ?: "",
-            gcpApiKey = prefs.getString(KEY_STT_GCP_API_KEY, "") ?: "",
-            gcpServiceAccountJson = prefs.getString(KEY_STT_GCP_SERVICE_ACCOUNT_JSON, "") ?: "",
+            deepgramApiKey = prefs.string(KEY_STT_DEEPGRAM_API_KEY, ""),
+            assemblyaiApiKey = prefs.string(KEY_STT_ASSEMBLYAI_API_KEY, ""),
+            gcpProjectId = prefs.string(KEY_STT_GCP_PROJECT_ID, ""),
+            gcpApiKey = prefs.string(KEY_STT_GCP_API_KEY, ""),
+            gcpServiceAccountJson = prefs.string(KEY_STT_GCP_SERVICE_ACCOUNT_JSON, ""),
             gcpUseServiceAccount = prefs.getBoolean(KEY_STT_GCP_USE_SERVICE_ACCOUNT, false),
-            azureSpeechKey = prefs.getString(KEY_STT_AZURE_SPEECH_KEY, "") ?: "",
-            azureSpeechRegion = prefs.getString(KEY_STT_AZURE_SPEECH_REGION, "") ?: "",
-            awsAccessKeyId = prefs.getString(KEY_STT_AWS_ACCESS_KEY_ID, "") ?: "",
-            awsSecretAccessKey = prefs.getString(KEY_STT_AWS_SECRET_ACCESS_KEY, "") ?: "",
-            awsRegion = prefs.getString(KEY_STT_AWS_REGION, DEFAULT_AWS_REGION)
-                ?: DEFAULT_AWS_REGION,
-            ibmApiKey = prefs.getString(KEY_STT_IBM_API_KEY, "") ?: "",
-            ibmServiceUrl = prefs.getString(KEY_STT_IBM_SERVICE_URL, "") ?: "",
-            iflytekAppId = prefs.getString(KEY_STT_IFLYTEK_APP_ID, "") ?: "",
-            iflytekApiKey = prefs.getString(KEY_STT_IFLYTEK_API_KEY, "") ?: "",
-            iflytekApiSecret = prefs.getString(KEY_STT_IFLYTEK_API_SECRET, "") ?: "",
-            huaweiAk = prefs.getString(KEY_STT_HUAWEI_AK, "") ?: "",
-            huaweiSk = prefs.getString(KEY_STT_HUAWEI_SK, "") ?: "",
-            huaweiRegion = prefs.getString(KEY_STT_HUAWEI_REGION, DEFAULT_HUAWEI_REGION)
-                ?: DEFAULT_HUAWEI_REGION,
-            huaweiProjectId = prefs.getString(KEY_STT_HUAWEI_PROJECT_ID, "") ?: "",
-            volcengineAk = prefs.getString(KEY_STT_VOLCENGINE_AK, "") ?: "",
-            volcangineSk = prefs.getString(KEY_STT_VOLCENGINE_SK, "") ?: "",
-            volcengineAppId = prefs.getString(KEY_STT_VOLCENGINE_APP_ID, "") ?: "",
-            aliyunAccessKeyId = prefs.getString(KEY_STT_ALIYUN_ACCESS_KEY_ID, "") ?: "",
-            aliyunAccessKeySecret = prefs.getString(KEY_STT_ALIYUN_ACCESS_KEY_SECRET, "") ?: "",
-            aliyunAppKey = prefs.getString(KEY_STT_ALIYUN_APP_KEY, "") ?: "",
-            tencentSecretId = prefs.getString(KEY_STT_TENCENT_SECRET_ID, "") ?: "",
-            tencentSecretKey = prefs.getString(KEY_STT_TENCENT_SECRET_KEY, "") ?: "",
-            tencentAppId = prefs.getString(KEY_STT_TENCENT_APP_ID, "") ?: "",
-            tencentEngineModelType = prefs.getString(
-                KEY_STT_TENCENT_ENGINE_MODEL_TYPE, DEFAULT_TENCENT_ENGINE_MODEL_TYPE
-            ) ?: DEFAULT_TENCENT_ENGINE_MODEL_TYPE,
-            baiduAsrApiKey = prefs.getString(KEY_STT_BAIDU_ASR_API_KEY, "") ?: "",
-            baiduAsrSecretKey = prefs.getString(KEY_STT_BAIDU_ASR_SECRET_KEY, "") ?: "",
-            revaiAccessToken = prefs.getString(KEY_STT_REVAI_ACCESS_TOKEN, "") ?: "",
-            speechmaticsApiKey = prefs.getString(KEY_STT_SPEECHMATICS_API_KEY, "") ?: "",
-            otteraiApiKey = prefs.getString(KEY_STT_OTTERAI_API_KEY, "") ?: "",
+            azureSpeechKey = prefs.string(KEY_STT_AZURE_SPEECH_KEY, ""),
+            azureSpeechRegion = prefs.string(KEY_STT_AZURE_SPEECH_REGION, ""),
+            awsAccessKeyId = prefs.string(KEY_STT_AWS_ACCESS_KEY_ID, ""),
+            awsSecretAccessKey = prefs.string(KEY_STT_AWS_SECRET_ACCESS_KEY, ""),
+            awsRegion = prefs.string(KEY_STT_AWS_REGION, DEFAULT_AWS_REGION),
+            ibmApiKey = prefs.string(KEY_STT_IBM_API_KEY, ""),
+            ibmServiceUrl = prefs.string(KEY_STT_IBM_SERVICE_URL, ""),
+            iflytekAppId = prefs.string(KEY_STT_IFLYTEK_APP_ID, ""),
+            iflytekApiKey = prefs.string(KEY_STT_IFLYTEK_API_KEY, ""),
+            iflytekApiSecret = prefs.string(KEY_STT_IFLYTEK_API_SECRET, ""),
+            huaweiAk = prefs.string(KEY_STT_HUAWEI_AK, ""),
+            huaweiSk = prefs.string(KEY_STT_HUAWEI_SK, ""),
+            huaweiRegion = prefs.string(KEY_STT_HUAWEI_REGION, DEFAULT_HUAWEI_REGION),
+            huaweiProjectId = prefs.string(KEY_STT_HUAWEI_PROJECT_ID, ""),
+            volcengineAk = prefs.string(KEY_STT_VOLCENGINE_AK, ""),
+            volcangineSk = prefs.string(KEY_STT_VOLCENGINE_SK, ""),
+            volcengineAppId = prefs.string(KEY_STT_VOLCENGINE_APP_ID, ""),
+            aliyunAccessKeyId = prefs.string(KEY_STT_ALIYUN_ACCESS_KEY_ID, ""),
+            aliyunAccessKeySecret = prefs.string(KEY_STT_ALIYUN_ACCESS_KEY_SECRET, ""),
+            aliyunAppKey = prefs.string(KEY_STT_ALIYUN_APP_KEY, ""),
+            tencentSecretId = prefs.string(KEY_STT_TENCENT_SECRET_ID, ""),
+            tencentSecretKey = prefs.string(KEY_STT_TENCENT_SECRET_KEY, ""),
+            tencentAppId = prefs.string(KEY_STT_TENCENT_APP_ID, ""),
+            tencentEngineModelType =
+                prefs.string(KEY_STT_TENCENT_ENGINE_MODEL_TYPE, DEFAULT_TENCENT_ENGINE_MODEL_TYPE),
+            baiduAsrApiKey = prefs.string(KEY_STT_BAIDU_ASR_API_KEY, ""),
+            baiduAsrSecretKey = prefs.string(KEY_STT_BAIDU_ASR_SECRET_KEY, ""),
+            revaiAccessToken = prefs.string(KEY_STT_REVAI_ACCESS_TOKEN, ""),
+            speechmaticsApiKey = prefs.string(KEY_STT_SPEECHMATICS_API_KEY, ""),
+            otteraiApiKey = prefs.string(KEY_STT_OTTERAI_API_KEY, ""),
             // Use device locale (e.g. "ko-KR") as the first-run default so new users get
             // the correct TTS and response language automatically.
             // Existing users who already have a saved value keep their preference unchanged.

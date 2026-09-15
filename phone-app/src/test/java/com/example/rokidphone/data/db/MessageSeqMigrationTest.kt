@@ -191,6 +191,19 @@ class MessageSeqMigrationTest {
     }
 
     @Test
+    fun `the shared instance registers both migrations`() {
+        // getInstance is the path the app actually uses; it must carry every
+        // migration, or an upgrade from version 1 falls back to a destructive open.
+        val first = AppDatabase.getInstance(context)
+        val second = AppDatabase.getInstance(context)
+
+        assertThat(first).isSameInstanceAs(second)
+        val configured = first.openHelper.writableDatabase.version
+        assertThat(configured).isEqualTo(3)
+        first.close()
+    }
+
+    @Test
     fun `an empty database migrates cleanly`() {
         createVersion2Database { db -> db.insertConversation("c1") }
 

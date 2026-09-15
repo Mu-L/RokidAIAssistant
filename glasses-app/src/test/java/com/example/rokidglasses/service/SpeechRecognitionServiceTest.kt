@@ -135,6 +135,15 @@ class SpeechRecognitionServiceTest {
         }
 
     @Test
+    fun `the default client is built when no transport is supplied`() {
+        // Constructing without a client evaluates the shared default, which is the
+        // configuration the app ships with. Building it opens no connection.
+        val shipped = SpeechRecognitionService(apiKey = "gemini-key")
+
+        assertThat(shipped).isNotNull()
+    }
+
+    @Test
     fun `audio below a thousand bytes never reaches the network`() = runBlocking {
         val result = service.transcribe(ByteArray(999))
 

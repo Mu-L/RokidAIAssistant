@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import com.example.rokidphone.service.stt.SttProvider
 import com.google.common.truth.Truth.assertThat
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -207,6 +209,28 @@ class SttCredentialPersistenceTest {
         assertThat(credentials.deepgramApiKey).isEqualTo("deepgram-key")
         assertThat(credentials.tencentSecretId).isEqualTo("tencent-id")
         assertThat(credentials.speechmaticsApiKey).isEqualTo("speechmatics-key")
+    }
+
+    @Test
+    fun `a missing setting falls back to its default`() {
+        val readString = SettingsRepository::class.java.getDeclaredMethod(
+            "string", SharedPreferences::class.java, String::class.java, String::class.java
+        ).apply { isAccessible = true }
+
+        // SharedPreferences.getString is nullable, and some implementations return
+        // null rather than echoing the default back. The fallback has to hold.
+        val nullReturning = mockk<SharedPreferences> {
+            every { getString(any(), any()) } returns null
+        }
+        assertThat(readString.invoke(repository, nullReturning, "absent", "fallback"))
+            .isEqualTo("fallback")
+
+        // A stored value is returned untouched.
+        val storing = mockk<SharedPreferences> {
+            every { getString(any(), any()) } returns "stored"
+        }
+        assertThat(readString.invoke(repository, storing, "present", "fallback"))
+            .isEqualTo("stored")
     }
 
     @Test
