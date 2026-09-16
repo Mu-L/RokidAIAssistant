@@ -139,6 +139,29 @@ class ApiSettingsValidationTest {
     }
 
     @Test
+    fun `baidu credential selection and legacy mode follow qianfan and legacy settings`() {
+        val qianfan = ApiSettings(
+            aiProvider = AiProvider.BAIDU,
+            baiduApiKey = "legacy-key",
+            baiduSecretKey = "legacy-secret",
+            baiduQianfanApiKey = "qianfan-key"
+        )
+        val legacyAuto = ApiSettings(
+            aiProvider = AiProvider.BAIDU,
+            baiduApiKey = "legacy-key",
+            baiduSecretKey = "legacy-secret"
+        )
+        val legacyForced = qianfan.copy(baiduUseLegacyAuth = true)
+
+        assertThat(qianfan.isBaiduLegacyMode()).isFalse()
+        assertThat(qianfan.getCurrentApiKey()).isEqualTo("qianfan-key")
+        assertThat(legacyAuto.isBaiduLegacyMode()).isTrue()
+        assertThat(legacyAuto.getCurrentApiKey()).isEqualTo("legacy-key")
+        assertThat(legacyForced.isBaiduLegacyMode()).isTrue()
+        assertThat(legacyForced.getCurrentApiKey()).isEqualTo("legacy-key")
+    }
+
+    @Test
     fun `configured provider lists and missing keys reflect the credentials present`() {
         val empty = ApiSettings(aiProvider = AiProvider.OPENAI)
         assertThat(empty.hasAnyApiKeyConfigured()).isFalse()
@@ -175,6 +198,30 @@ class ApiSettingsValidationTest {
         }
         // A partial Baidu pair is not a usable credential.
         assertThat(ApiSettings(baiduApiKey = "v").hasAnyApiKeyConfigured()).isFalse()
+    }
+
+    @Test
+    fun `provider model memory keeps selections isolated and migrates legacy ids`() {
+        val remembered = ApiSettings(
+            aiProvider = AiProvider.OPENAI,
+            aiModelId = "gpt-5.6"
+        )
+            .withModelForProvider(AiProvider.OPENAI, "gpt-5.6")
+            .withModelForProvider(AiProvider.CUSTOM, "llama-self-hosted")
+            .withModelForProvider(AiProvider.DEEPSEEK, "deepseek-chat")
+
+        assertThat(remembered.getModelIdForProvider(AiProvider.OPENAI)).isEqualTo("gpt-5.6")
+        assertThat(remembered.copy(aiProvider = AiProvider.CUSTOM, customModelName = "").getCurrentModelId())
+            .isEqualTo("llama-self-hosted")
+        assertThat(remembered.getModelIdForProvider(AiProvider.ANTHROPIC))
+            .isEqualTo(com.example.rokidphone.ai.catalog.FallbackModelCatalog.defaultModelFor(AiProvider.ANTHROPIC))
+
+        val migrated = remembered.copy(aiProvider = AiProvider.DEEPSEEK, aiModelId = "deepseek-reasoner")
+            .migrateLegacyModelIds()
+
+        assertThat(migrated.aiModelId).isEqualTo("deepseek-v4-pro")
+        assertThat(migrated.providerModelIds[AiProvider.DEEPSEEK.name]).isEqualTo("deepseek-v4-flash")
+        assertThat(migrated.providerModelIds[AiProvider.OPENAI.name]).isEqualTo("gpt-5.6")
     }
 
     @Test
